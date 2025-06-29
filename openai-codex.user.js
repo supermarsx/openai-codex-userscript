@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
 // @match        https://chatgpt.com/codex
 // @grant        none
@@ -19,25 +19,10 @@
         "Refactor this function to use async/await."
     ];
 
-    // Wait until the main prompt input exists
-    function waitForPromptInput(callback) {
-        const interval = setInterval(() => {
-            // Look for the codex prompt editable div
-            const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
-            // Place dropdown above the parent .flex-col.items-center
-            const colDiv = promptDiv?.closest('.flex-col.items-center');
-            if (promptDiv && colDiv) {
-                clearInterval(interval);
-                callback(promptDiv, colDiv);
-            }
-        }, 350);
-    }
-
-    waitForPromptInput((promptDiv, colDiv) => {
-        // Avoid duplicate dropdowns
+    // Creates and injects the dropdown element
+    function injectDropdown(promptDiv, colDiv) {
         if (document.getElementById('gpt-prompt-suggest-dropdown')) return;
 
-        // Create dropdown
         const dropdown = document.createElement('select');
         dropdown.id = 'gpt-prompt-suggest-dropdown';
         dropdown.style.margin = '8px 0 12px 0';
@@ -50,13 +35,11 @@
         dropdown.style.outline = 'none';
         dropdown.style.maxWidth = '100%';
 
-        // First option is the "hint" option
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
         defaultOpt.innerText = '💡 Insert a prompt suggestion...';
         dropdown.appendChild(defaultOpt);
 
-        // Add suggestions
         for (let s of suggestions) {
             const opt = document.createElement('option');
             opt.value = s;
@@ -64,24 +47,18 @@
             dropdown.appendChild(opt);
         }
 
-        // Insert above the input
         colDiv.insertBefore(dropdown, colDiv.firstChild);
 
-        // On selection, fill prompt
-        dropdown.addEventListener('change', e => {
+        dropdown.addEventListener('change', () => {
             const value = dropdown.value;
             if (!value) return;
-            // Clear the prompt (simulate input)
-            // ProseMirror is contenteditable, so set innerText or innerHTML
+
             promptDiv.focus();
-            // Remove any children, insert a new <p> node with the text
             promptDiv.innerHTML = '';
             const p = document.createElement('p');
             p.innerText = value;
             promptDiv.appendChild(p);
 
-            // Put caret at end (simulate typing)
-            // Select all and collapse to end
             const range = document.createRange();
             range.selectNodeContents(promptDiv);
             range.collapse(false);
@@ -89,8 +66,33 @@
             sel.removeAllRanges();
             sel.addRange(range);
 
-            // Optional: close dropdown
             dropdown.selectedIndex = 0;
         });
+    }
+
+    // Wait until the main prompt input exists
+    function waitForPromptInput(callback) {
+        const interval = setInterval(() => {
+            const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
+            const colDiv = promptDiv?.closest('.flex-col.items-center');
+            if (promptDiv && colDiv) {
+                clearInterval(interval);
+                callback(promptDiv, colDiv);
+            }
+        }, 350);
+    }
+
+    waitForPromptInput((promptDiv, colDiv) => {
+        injectDropdown(promptDiv, colDiv);
+
+        const observer = new MutationObserver(() => {
+            const pd = document.querySelector('.ProseMirror#prompt-textarea');
+            const cd = pd?.closest('.flex-col.items-center');
+            if (pd && cd && !document.getElementById('gpt-prompt-suggest-dropdown')) {
+                injectDropdown(pd, cd);
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
     });
 })();
