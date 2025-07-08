@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
 // @match        https://chatgpt.com/codex
 // @grant        none
@@ -14,14 +14,51 @@
     cssLink.href = 'https://unpkg.com/shadcn-ui/dist/index.css';
     document.head.appendChild(cssLink);
 
-    // Customize your prompt suggestions here
-    const suggestions = [
+    const DEFAULT_SUGGESTIONS = [
         "Suggest code improvements and bugfixes.",
         "Suggest test coverage improvement tasks.",
         "Update documentation according to the current features and functionality.",
         "Suggest code refactor tasks.",
         "Refactor this function to use async/await."
     ];
+
+    function loadSuggestions() {
+        try {
+            const raw = localStorage.getItem('gpt-prompt-suggestions');
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Array.isArray(data)) {
+                    return data;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load suggestions', e);
+        }
+        return null;
+    }
+
+    function saveSuggestions(list) {
+        try {
+            localStorage.setItem('gpt-prompt-suggestions', JSON.stringify(list));
+        } catch (e) {
+            console.error('Failed to save suggestions', e);
+        }
+    }
+
+    function openConfig(promptDiv, colDiv) {
+        const current = suggestions.join('\n');
+        const input = window.prompt('Edit suggestions (one per line):', current);
+        if (input === null) return;
+        suggestions = input.split(/\n+/).map(s => s.trim()).filter(Boolean);
+        saveSuggestions(suggestions);
+        const existing = document.getElementById('gpt-prompt-suggest-dropdown');
+        if (existing) {
+            existing.parentElement.remove();
+        }
+        injectDropdown(promptDiv, colDiv);
+    }
+
+    let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
 
     // Creates and injects the dropdown element
     function injectDropdown(promptDiv, colDiv) {
@@ -45,8 +82,22 @@
 
         const wrapper = document.createElement("div");
         wrapper.className = "grid w-full gap-1.5";
-        wrapper.appendChild(dropdown);
+
+        const container = document.createElement('div');
+        container.className = 'flex w-full gap-2';
+        container.appendChild(dropdown);
+
+        const configBtn = document.createElement('button');
+        configBtn.type = 'button';
+        configBtn.textContent = '⚙️';
+        configBtn.title = 'Edit suggestions';
+        configBtn.className = 'text-sm';
+        container.appendChild(configBtn);
+
+        wrapper.appendChild(container);
         colDiv.insertBefore(wrapper, colDiv.firstChild);
+
+        configBtn.addEventListener('click', () => openConfig(promptDiv, colDiv));
 
         dropdown.addEventListener('change', () => {
             const value = dropdown.value;
