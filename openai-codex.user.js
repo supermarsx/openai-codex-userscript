@@ -71,14 +71,24 @@
 
     // Wait until the main prompt input exists
     function waitForPromptInput(callback) {
-        const interval = setInterval(() => {
+        const observer = new MutationObserver(() => {
             const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
             const colDiv = promptDiv?.closest('.flex-col.items-center');
             if (promptDiv && colDiv) {
-                clearInterval(interval);
+                observer.disconnect();
                 callback(promptDiv, colDiv);
             }
-        }, 350);
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Check immediately in case the element already exists
+        const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
+        const colDiv = promptDiv?.closest('.flex-col.items-center');
+        if (promptDiv && colDiv) {
+            observer.disconnect();
+            callback(promptDiv, colDiv);
+        }
     }
 
     waitForPromptInput((promptDiv, colDiv) => {
