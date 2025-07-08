@@ -118,10 +118,8 @@
             if (!value) return;
 
             promptDiv.focus();
-            promptDiv.innerHTML = '';
-            const p = document.createElement('p');
-            p.innerText = value;
-            promptDiv.appendChild(p);
+            promptDiv.textContent = '';
+            promptDiv.textContent = value;
 
             const range = document.createRange();
             range.selectNodeContents(promptDiv);
