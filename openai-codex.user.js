@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
 // @match        https://chatgpt.com/codex
 // @grant        none
@@ -59,6 +59,20 @@
     }
 
     let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
+
+    // Returns the main prompt input using several fallbacks.
+    // 1. Prefer an element with the id "prompt-textarea".
+    // 2. If not found, try the data-testid attribute.
+    // 3. As a final fallback, search for the ProseMirror editor element.
+    function findPromptInput() {
+        return (
+            document.querySelector('#prompt-textarea') ||
+            document.querySelector('[data-testid="prompt-textarea"]') ||
+            document.querySelector('.ProseMirror#prompt-textarea') ||
+            document.querySelector('.ProseMirror[data-testid="prompt-textarea"]') ||
+            document.querySelector('.ProseMirror')
+        );
+    }
 
     // Creates and injects the dropdown element
     function injectDropdown(promptDiv, colDiv) {
@@ -123,7 +137,7 @@
     // Wait until the main prompt input exists
     function waitForPromptInput(callback) {
         const observer = new MutationObserver(() => {
-            const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
+            const promptDiv = findPromptInput();
             const colDiv = promptDiv?.closest('.flex-col.items-center');
             if (promptDiv && colDiv) {
                 observer.disconnect();
@@ -134,7 +148,7 @@
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Check immediately in case the element already exists
-        const promptDiv = document.querySelector('.ProseMirror#prompt-textarea');
+        const promptDiv = findPromptInput();
         const colDiv = promptDiv?.closest('.flex-col.items-center');
         if (promptDiv && colDiv) {
             observer.disconnect();
@@ -146,7 +160,7 @@
         injectDropdown(promptDiv, colDiv);
 
         const observer = new MutationObserver(() => {
-            const pd = document.querySelector('.ProseMirror#prompt-textarea');
+            const pd = findPromptInput();
             const cd = pd?.closest('.flex-col.items-center');
             if (pd && cd && !document.getElementById('gpt-prompt-suggest-dropdown')) {
                 injectDropdown(pd, cd);
