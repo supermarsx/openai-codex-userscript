@@ -9,6 +9,10 @@
 
 (function () {
     'use strict';
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://unpkg.com/shadcn-ui/dist/index.css';
+    document.head.appendChild(cssLink);
 
     // Customize your prompt suggestions here
     const suggestions = [
@@ -25,15 +29,7 @@
 
         const dropdown = document.createElement('select');
         dropdown.id = 'gpt-prompt-suggest-dropdown';
-        dropdown.style.margin = '8px 0 12px 0';
-        dropdown.style.padding = '5px 16px';
-        dropdown.style.fontSize = '1rem';
-        dropdown.style.borderRadius = '8px';
-        dropdown.style.border = '1px solid #888';
-        dropdown.style.background = 'var(--background, #181818)';
-        dropdown.style.color = '#fff';
-        dropdown.style.outline = 'none';
-        dropdown.style.maxWidth = '100%';
+        dropdown.className = 'flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
@@ -47,7 +43,10 @@
             dropdown.appendChild(opt);
         }
 
-        colDiv.insertBefore(dropdown, colDiv.firstChild);
+        const wrapper = document.createElement("div");
+        wrapper.className = "grid w-full gap-1.5";
+        wrapper.appendChild(dropdown);
+        colDiv.insertBefore(wrapper, colDiv.firstChild);
 
         dropdown.addEventListener('change', () => {
             const value = dropdown.value;
