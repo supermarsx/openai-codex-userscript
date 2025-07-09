@@ -18,7 +18,9 @@
     });
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
-    cssLink.href = 'https://unpkg.com/shadcn-ui/dist/index.css';
+    cssLink.href = 'https://unpkg.com/shadcn-ui@0.9.5/dist/index.css';
+    cssLink.integrity = 'sha384-OzJrouefxdP3Nw7TAHTVn7mydEwLPgjLPgFZITrsDNumVhfB3NMgE4o7GP4OU9JP';
+    cssLink.crossOrigin = 'anonymous';
     document.head.appendChild(cssLink);
 
     const style = document.createElement('style');
