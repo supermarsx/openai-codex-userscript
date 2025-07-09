@@ -14,6 +14,22 @@
     cssLink.href = 'https://unpkg.com/shadcn-ui/dist/index.css';
     document.head.appendChild(cssLink);
 
+    const style = document.createElement('style');
+    style.textContent = `
+@media (prefers-color-scheme: dark) {
+    #gpt-prompt-suggest-dropdown {
+        background-color: #40414f;
+        color: #ececf1;
+        border-color: #565869;
+    }
+    #gpt-prompt-suggest-dropdown option {
+        background-color: #40414f;
+        color: #ececf1;
+    }
+}
+`;
+    document.head.appendChild(style);
+
     const DEFAULT_SUGGESTIONS = [
         "Suggest code improvements and bugfixes.",
         "Suggest test coverage improvement tasks.",
