@@ -143,15 +143,21 @@
             if (!value) return;
 
             promptDiv.focus();
-            promptDiv.textContent = '';
-            promptDiv.textContent = value;
 
-            const range = document.createRange();
-            range.selectNodeContents(promptDiv);
-            range.collapse(false);
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
+            if (promptDiv instanceof HTMLTextAreaElement) {
+                promptDiv.value = value;
+                promptDiv.setSelectionRange(value.length, value.length);
+            } else {
+                promptDiv.textContent = '';
+                promptDiv.textContent = value;
+
+                const range = document.createRange();
+                range.selectNodeContents(promptDiv);
+                range.collapse(false);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
 
             dropdown.selectedIndex = 0;
         });
