@@ -23,21 +23,38 @@
     cssLink.crossOrigin = 'anonymous';
     document.head.appendChild(cssLink);
 
-    const style = document.createElement('style');
-    style.textContent = `
+    const varStyle = document.createElement('style');
+    varStyle.textContent = `
+:root {
+    --background: #ffffff;
+    --foreground: #18181b;
+    --ring: #d4d4d8;
+}
 @media (prefers-color-scheme: dark) {
-    #gpt-prompt-suggest-dropdown {
-        background-color: #40414f;
-        color: #ececf1;
-        border-color: #565869;
-    }
-    #gpt-prompt-suggest-dropdown option {
-        background-color: #40414f;
-        color: #ececf1;
+    :root {
+        --background: #40414f;
+        --foreground: #ececf1;
+        --ring: #565869;
     }
 }
 `;
-    document.head.appendChild(style);
+    document.head.appendChild(varStyle);
+
+    const fallbackStyle = document.createElement('style');
+    fallbackStyle.textContent = `
+#gpt-prompt-suggest-dropdown {
+    background-color: var(--background);
+    color: var(--foreground);
+    border-color: var(--ring);
+}
+#gpt-prompt-suggest-dropdown option {
+    background-color: var(--background);
+    color: var(--foreground);
+}
+`;
+    cssLink.addEventListener('error', () => {
+        document.head.appendChild(fallbackStyle);
+    });
 
     const DEFAULT_SUGGESTIONS = [
         "Suggest code improvements and bugfixes.",
