@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
 // @match        https://chatgpt.com/codex
 // @grant        none
@@ -9,6 +9,13 @@
 
 (function () {
     'use strict';
+    const observers = [];
+
+    window.addEventListener('beforeunload', () => {
+        for (const o of observers) {
+            o.disconnect();
+        }
+    });
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
     cssLink.href = 'https://unpkg.com/shadcn-ui/dist/index.css';
@@ -159,6 +166,8 @@
             }
         });
 
+        observers.push(observer);
+
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Check immediately in case the element already exists
@@ -180,6 +189,8 @@
                 injectDropdown(pd, cd);
             }
         });
+
+        observers.push(observer);
 
         observer.observe(document.body, { childList: true, subtree: true });
     });
