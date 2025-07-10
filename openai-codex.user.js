@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.11
+// @version      1.12
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -106,7 +106,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.11";
+    const SCRIPT_VERSION = "1.12";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -216,8 +216,12 @@
     let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
     let options = loadOptions();
     let history = loadHistory();
+    function findByText(text) {
+      const elements = Array.from(document.querySelectorAll("body *"));
+      return elements.find((el) => el.textContent && el.textContent.includes(text)) || null;
+    }
     function toggleHeader(hide) {
-      const node = document.evaluate("//*[contains(text(),'What are we coding next?')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+      const node = findByText("What are we coding next?");
       if (node) node.style.display = hide ? "none" : "";
     }
     function toggleDocs(hide) {
@@ -227,7 +231,7 @@
       }
     }
     function toggleLogoText(hide) {
-      const node = document.evaluate("//*[contains(text(),'Codex')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+      const node = findByText("Codex");
       if (node) node.style.display = hide ? "none" : "";
     }
     function toggleLogoImage(hide) {
