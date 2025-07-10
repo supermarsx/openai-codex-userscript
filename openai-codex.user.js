@@ -10,6 +10,8 @@
 (function () {
     'use strict';
     const observers = [];
+    let promptInputObserver = null;
+    let dropdownObserver = null;
     let currentPromptDiv = null;
     let currentColDiv = null;
 
@@ -411,15 +413,25 @@
 
     // Wait until the main prompt input exists
     function waitForPromptInput(callback) {
+        if (promptInputObserver) {
+            promptInputObserver.disconnect();
+            const idx = observers.indexOf(promptInputObserver);
+            if (idx !== -1) observers.splice(idx, 1);
+        }
+
         const observer = new MutationObserver(() => {
             const promptDiv = findPromptInput();
             const colDiv = promptDiv?.closest('.flex-col.items-center');
             if (promptDiv && colDiv) {
                 observer.disconnect();
+                const i = observers.indexOf(observer);
+                if (i !== -1) observers.splice(i, 1);
+                promptInputObserver = null;
                 callback(promptDiv, colDiv);
             }
         });
 
+        promptInputObserver = observer;
         observers.push(observer);
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -429,6 +441,9 @@
         const colDiv = promptDiv?.closest('.flex-col.items-center');
         if (promptDiv && colDiv) {
             observer.disconnect();
+            const i = observers.indexOf(observer);
+            if (i !== -1) observers.splice(i, 1);
+            promptInputObserver = null;
             callback(promptDiv, colDiv);
         }
     }
@@ -436,6 +451,13 @@
     waitForPromptInput((promptDiv, colDiv) => {
         currentPromptDiv = promptDiv;
         currentColDiv = colDiv;
+        if (dropdownObserver) {
+            dropdownObserver.disconnect();
+            const idx = observers.indexOf(dropdownObserver);
+            if (idx !== -1) observers.splice(idx, 1);
+            dropdownObserver = null;
+        }
+
         injectDropdown(promptDiv, colDiv);
 
         const observer = new MutationObserver(() => {
@@ -448,6 +470,7 @@
             }
         });
 
+        dropdownObserver = observer;
         observers.push(observer);
 
         observer.observe(document.body, { childList: true, subtree: true });
