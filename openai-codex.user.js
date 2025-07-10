@@ -142,6 +142,9 @@
     }
 
     function loadSuggestions() {
+        if (typeof localStorage === 'undefined') {
+            return DEFAULT_SUGGESTIONS.slice();
+        }
         try {
             const raw = localStorage.getItem('gpt-prompt-suggestions');
             if (raw) {
@@ -157,6 +160,9 @@
     }
 
     function saveSuggestions(list) {
+        if (typeof localStorage === 'undefined') {
+            return;
+        }
         try {
             localStorage.setItem('gpt-prompt-suggestions', JSON.stringify(list));
         } catch (e) {
