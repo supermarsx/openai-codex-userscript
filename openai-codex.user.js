@@ -290,6 +290,47 @@
 
     applyOptions();
 
+    // Automatically archive tasks based on status changes
+    function findArchiveButton() {
+        return (
+            document.querySelector('[data-testid="archive-task"]') ||
+            Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent))
+        );
+    }
+
+    function autoArchiveOnMerged() {
+        const btn = findArchiveButton();
+        if (btn) btn.click();
+    }
+
+    function autoArchiveOnClosed() {
+        const btn = findArchiveButton();
+        if (btn) btn.click();
+    }
+
+    let lastTaskStatus = null;
+
+    function detectTaskStatus() {
+        const el =
+            document.querySelector('[data-testid="task-status"]') ||
+            document.querySelector('.task-status');
+        if (!el) return;
+        const status = el.textContent.trim();
+        if (status && status !== lastTaskStatus) {
+            lastTaskStatus = status;
+            if (/merged/i.test(status)) {
+                autoArchiveOnMerged();
+            } else if (/closed/i.test(status)) {
+                autoArchiveOnClosed();
+            }
+        }
+    }
+
+    const taskObserver = new MutationObserver(detectTaskStatus);
+    observers.push(taskObserver);
+    taskObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    detectTaskStatus();
+
     // Returns the main prompt input using several fallbacks.
     // 1. Prefer an element with the id "prompt-textarea".
     // 2. If not found, try the data-testid attribute.
