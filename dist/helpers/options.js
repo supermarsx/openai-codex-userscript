@@ -11,6 +11,7 @@ exports.DEFAULT_OPTIONS = {
     hideLogoText: false,
     hideLogoImage: false,
     hideProfile: false,
+    hideEnvironments: false,
     autoCheckUpdates: true,
 };
 const STORAGE_KEY = 'gpt-script-options';
