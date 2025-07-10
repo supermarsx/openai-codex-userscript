@@ -175,6 +175,7 @@
                 sel.addRange(range);
             }
 
+            promptDiv.dispatchEvent(new InputEvent('input', { bubbles: true }));
             dropdown.selectedIndex = 0;
         });
     }
