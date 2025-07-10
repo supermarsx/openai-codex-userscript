@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "none",
+    "outFile": "openai-codex.user.js",
+    "strict": false
+  },
+  "files": [
+    "src/header.ts",
+    "src/libs/storage.ts",
+    "src/helpers/dom.ts",
+    "src/main.ts"
+  ]
+}

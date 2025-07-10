@@ -1,162 +1,17 @@
-// ==UserScript==
-// @name         OpenAI Codex UI Enhancer
-// @namespace    http://tampermonkey.net/
-// @version      1.8
-// @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
-// @match        https://chatgpt.com/codex*
-// @grant        none
-// ==/UserScript==
-// Storage utilities
-const DEFAULT_SUGGESTIONS = [
-    "Suggest code improvements and bugfixes.",
-    "Suggest test coverage improvement tasks.",
-    "Update documentation according to the current features and functionality.",
-    "Suggest code refactor tasks.",
-    "Refactor this function to use async/await."
-];
-const DEFAULT_OPTIONS = {
-    dark: false,
-    hideHeader: false,
-    hideDocs: false
-};
-var suggestions;
-var options;
-function loadOptions() {
-    try {
-        const raw = localStorage.getItem('gpt-script-options');
-        if (raw) {
-            const data = JSON.parse(raw);
-            return Object.assign(Object.assign({}, DEFAULT_OPTIONS), data);
-        }
-    }
-    catch (e) {
-        console.error('Failed to load options', e);
-    }
-    return Object.assign({}, DEFAULT_OPTIONS);
-}
-function saveOptions(obj) {
-    try {
-        localStorage.setItem('gpt-script-options', JSON.stringify(obj));
-    }
-    catch (e) {
-        console.error('Failed to save options', e);
-    }
-}
-function loadSuggestions() {
-    if (typeof localStorage === 'undefined') {
-        return DEFAULT_SUGGESTIONS.slice();
-    }
-    try {
-        const raw = localStorage.getItem('gpt-prompt-suggestions');
-        if (raw) {
-            const data = JSON.parse(raw);
-            if (Array.isArray(data)) {
-                return data;
-            }
-        }
-    }
-    catch (e) {
-        console.error('Failed to load suggestions', e);
-    }
-    return null;
-}
-function saveSuggestions(list) {
-    if (typeof localStorage === 'undefined') {
-        return;
-    }
-    try {
-        localStorage.setItem('gpt-prompt-suggestions', JSON.stringify(list));
-    }
-    catch (e) {
-        console.error('Failed to save suggestions', e);
-    }
-}
-// DOM helper functions
-function toggleHeader(hide) {
-    const node = document.evaluate("//*[contains(text(),'What are we coding next?')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-    if (node)
-        node.style.display = hide ? 'none' : '';
-}
-function toggleDocs(hide) {
-    const res = document.evaluate("//a[contains(.,'Docs')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-    let el;
-    while ((el = res.iterateNext())) {
-        el.style.display = hide ? 'none' : '';
-    }
-}
-function findPromptInput() {
-    return (document.querySelector('#prompt-textarea') ||
-        document.querySelector('[data-testid="prompt-textarea"]') ||
-        document.querySelector('.ProseMirror#prompt-textarea') ||
-        document.querySelector('.ProseMirror[data-testid="prompt-textarea"]') ||
-        document.querySelector('.ProseMirror'));
-}
-function injectDropdown(promptDiv, colDiv) {
-    if (document.getElementById('gpt-prompt-suggest-dropdown'))
-        return;
-    const dropdown = document.createElement('select');
-    dropdown.id = 'gpt-prompt-suggest-dropdown';
-    dropdown.className = 'flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.innerText = '💡 Insert a prompt suggestion...';
-    dropdown.appendChild(defaultOpt);
-    for (let s of suggestions) {
-        const opt = document.createElement('option');
-        opt.value = s;
-        opt.innerText = s.length > 100 ? s.slice(0, 100) + "..." : s;
-        dropdown.appendChild(opt);
-    }
-    const wrapper = document.createElement('div');
-    wrapper.className = 'grid w-full gap-1.5';
-    const container = document.createElement('div');
-    container.className = 'flex w-full gap-2';
-    container.appendChild(dropdown);
-    const configBtn = document.createElement('button');
-    configBtn.type = 'button';
-    configBtn.textContent = '⚙️';
-    configBtn.title = 'Settings';
-    configBtn.className = 'text-sm';
-    container.appendChild(configBtn);
-    wrapper.appendChild(container);
-    colDiv.insertBefore(wrapper, colDiv.firstChild);
-    configBtn.addEventListener('click', () => openSettings());
-    dropdown.addEventListener('change', () => {
-        const value = dropdown.value;
-        if (!value)
-            return;
-        promptDiv.focus();
-        if (promptDiv instanceof HTMLTextAreaElement) {
-            promptDiv.value = value;
-            promptDiv.setSelectionRange(value.length, value.length);
-        }
-        else {
-            promptDiv.textContent = '';
-            promptDiv.textContent = value;
-            const range = document.createRange();
-            range.selectNodeContents(promptDiv);
-            range.collapse(false);
-            const sel = window.getSelection();
-            if (sel) {
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        }
-        dropdown.selectedIndex = 0;
-    });
-}
 (function () {
     'use strict';
-    const observers = [];
-    let promptInputObserver = null;
-    let dropdownObserver = null;
-    let currentPromptDiv = null;
-    let currentColDiv = null;
+    const observers: MutationObserver[] = [];
+    let promptInputObserver: MutationObserver | null = null;
+    let dropdownObserver: MutationObserver | null = null;
+    let currentPromptDiv: HTMLElement | null = null;
+    let currentColDiv: HTMLElement | null = null;
+
     window.addEventListener('beforeunload', () => {
         for (const o of observers) {
             o.disconnect();
         }
     });
+
     const varStyle = document.createElement('style');
     varStyle.textContent = `
 :root {
@@ -183,6 +38,7 @@ function injectDropdown(promptDiv, colDiv) {
 }
 `;
     document.head.appendChild(varStyle);
+
     const settingsStyle = document.createElement('style');
     settingsStyle.textContent = `
 #gpt-settings-gear {
@@ -226,6 +82,7 @@ function injectDropdown(promptDiv, colDiv) {
 #gpt-settings-modal li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 `;
     document.head.appendChild(settingsStyle);
+
     const fallbackStyle = document.createElement('style');
     fallbackStyle.textContent = `
 #gpt-prompt-suggest-dropdown {
@@ -239,18 +96,24 @@ function injectDropdown(promptDiv, colDiv) {
 }
 `;
     document.head.appendChild(fallbackStyle);
+
     suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
     options = loadOptions();
+
+
+
     function applyOptions() {
         document.documentElement.classList.toggle('userscript-force-dark', options.dark);
         document.documentElement.classList.toggle('userscript-force-light', !options.dark);
         toggleHeader(options.hideHeader);
         toggleDocs(options.hideDocs);
     }
+
     const gear = document.createElement('div');
     gear.id = 'gpt-settings-gear';
     gear.textContent = '⚙️';
     document.body.appendChild(gear);
+
     const modal = document.createElement('div');
     modal.id = 'gpt-settings-modal';
     modal.innerHTML = `
@@ -263,15 +126,15 @@ function injectDropdown(promptDiv, colDiv) {
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
+
     function refreshDropdown() {
-        var _a;
         if (currentPromptDiv && currentColDiv) {
             const existing = document.getElementById('gpt-prompt-suggest-dropdown');
-            if (existing)
-                (_a = existing.closest('.grid')) === null || _a === void 0 ? void 0 : _a.remove();
+            if (existing) existing.closest('.grid')?.remove();
             injectDropdown(currentPromptDiv, currentColDiv);
         }
     }
+
     function renderSuggestions() {
         const wrap = modal.querySelector('#gpt-settings-suggestions');
         wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
@@ -320,137 +183,154 @@ function injectDropdown(promptDiv, colDiv) {
         });
         wrap.appendChild(addBtn);
     }
+
     function openSettings() {
         renderSuggestions();
-        modal.querySelector('#gpt-setting-dark').checked = options.dark;
-        modal.querySelector('#gpt-setting-header').checked = options.hideHeader;
-        modal.querySelector('#gpt-setting-docs').checked = options.hideDocs;
+        (modal.querySelector('#gpt-setting-dark') as HTMLInputElement).checked = options.dark;
+        (modal.querySelector('#gpt-setting-header') as HTMLInputElement).checked = options.hideHeader;
+        (modal.querySelector('#gpt-setting-docs') as HTMLInputElement).checked = options.hideDocs;
         modal.classList.add('show');
     }
+
     gear.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
-    modal.querySelector('#gpt-setting-dark').addEventListener('change', (e) => {
-        const input = e.target;
+    modal.querySelector('#gpt-setting-dark')!.addEventListener('change', (e) => {
+        const input = e.target as HTMLInputElement;
         options.dark = input.checked;
         saveOptions(options);
         applyOptions();
     });
-    modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => {
-        const input = e.target;
+    modal.querySelector('#gpt-setting-header')!.addEventListener('change', (e) => {
+        const input = e.target as HTMLInputElement;
         options.hideHeader = input.checked;
         saveOptions(options);
         applyOptions();
     });
-    modal.querySelector('#gpt-setting-docs').addEventListener('change', (e) => {
-        const input = e.target;
+    modal.querySelector('#gpt-setting-docs')!.addEventListener('change', (e) => {
+        const input = e.target as HTMLInputElement;
         options.hideDocs = input.checked;
         saveOptions(options);
         applyOptions();
     });
+
     const pageObserver = new MutationObserver(() => {
         toggleHeader(options.hideHeader);
         toggleDocs(options.hideDocs);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });
+
     applyOptions();
+
     // Automatically archive tasks based on status changes
     function findArchiveButton() {
-        return (document.querySelector('[data-testid="archive-task"]') ||
-            Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent)));
+        return (
+            document.querySelector('[data-testid="archive-task"]') ||
+            Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent))
+        );
     }
+
     function autoArchiveOnMerged() {
-        const btn = findArchiveButton();
-        if (btn)
-            btn.click();
+        const btn = findArchiveButton() as HTMLElement | null;
+        if (btn) btn.click();
     }
+
     function autoArchiveOnClosed() {
-        const btn = findArchiveButton();
-        if (btn)
-            btn.click();
+        const btn = findArchiveButton() as HTMLElement | null;
+        if (btn) btn.click();
     }
+
     let lastTaskStatus = null;
+
     function detectTaskStatus() {
-        const el = document.querySelector('[data-testid="task-status"]') ||
+        const el =
+            document.querySelector('[data-testid="task-status"]') ||
             document.querySelector('.task-status');
-        if (!el)
-            return;
+        if (!el) return;
         const status = el.textContent.trim();
         if (status && status !== lastTaskStatus) {
             lastTaskStatus = status;
             if (/merged/i.test(status)) {
                 autoArchiveOnMerged();
-            }
-            else if (/closed/i.test(status)) {
+            } else if (/closed/i.test(status)) {
                 autoArchiveOnClosed();
             }
         }
     }
+
     const taskObserver = new MutationObserver(detectTaskStatus);
     observers.push(taskObserver);
     taskObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
     detectTaskStatus();
+
     // Returns the main prompt input using several fallbacks.
     // 1. Prefer an element with the id "prompt-textarea".
     // 2. If not found, try the data-testid attribute.
     // 3. As a final fallback, search for the ProseMirror editor element.
+
+
     // Wait until the main prompt input exists
     function waitForPromptInput(callback) {
         if (promptInputObserver) {
             promptInputObserver.disconnect();
             const idx = observers.indexOf(promptInputObserver);
-            if (idx !== -1)
-                observers.splice(idx, 1);
+            if (idx !== -1) observers.splice(idx, 1);
         }
+
         const observer = new MutationObserver(() => {
             const promptDiv = findPromptInput();
-            const colDiv = promptDiv === null || promptDiv === void 0 ? void 0 : promptDiv.closest('.flex-col.items-center');
+            const colDiv = promptDiv?.closest('.flex-col.items-center');
             if (promptDiv && colDiv) {
                 observer.disconnect();
                 const i = observers.indexOf(observer);
-                if (i !== -1)
-                    observers.splice(i, 1);
+                if (i !== -1) observers.splice(i, 1);
                 promptInputObserver = null;
                 callback(promptDiv, colDiv);
             }
         });
+
         promptInputObserver = observer;
         observers.push(observer);
+
         observer.observe(document.body, { childList: true, subtree: true });
+
         // Check immediately in case the element already exists
         const promptDiv = findPromptInput();
-        const colDiv = promptDiv === null || promptDiv === void 0 ? void 0 : promptDiv.closest('.flex-col.items-center');
+        const colDiv = promptDiv?.closest('.flex-col.items-center');
         if (promptDiv && colDiv) {
             observer.disconnect();
             const i = observers.indexOf(observer);
-            if (i !== -1)
-                observers.splice(i, 1);
+            if (i !== -1) observers.splice(i, 1);
             promptInputObserver = null;
             callback(promptDiv, colDiv);
         }
     }
+
     waitForPromptInput((promptDiv, colDiv) => {
         currentPromptDiv = promptDiv;
         currentColDiv = colDiv;
         if (dropdownObserver) {
             dropdownObserver.disconnect();
             const idx = observers.indexOf(dropdownObserver);
-            if (idx !== -1)
-                observers.splice(idx, 1);
+            if (idx !== -1) observers.splice(idx, 1);
             dropdownObserver = null;
         }
+
         injectDropdown(promptDiv, colDiv);
+
         const observer = new MutationObserver(() => {
             const pd = findPromptInput();
-            const cd = pd === null || pd === void 0 ? void 0 : pd.closest('.flex-col.items-center');
+            const cd = pd?.closest('.flex-col.items-center') as HTMLElement | null;
             if (pd && cd && !document.getElementById('gpt-prompt-suggest-dropdown')) {
-                currentPromptDiv = pd;
+                currentPromptDiv = pd as HTMLElement;
                 currentColDiv = cd;
-                injectDropdown(pd, cd);
+                injectDropdown(pd as HTMLElement, cd);
             }
         });
+
         dropdownObserver = observer;
         observers.push(observer);
+
         observer.observe(document.body, { childList: true, subtree: true });
     });
 })();

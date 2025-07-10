@@ -2,9 +2,12 @@
   "name": "openai-codex-userscript",
   "version": "1.0.0",
   "scripts": {
+    "build": "tsc",
+    "pretest": "npm run build",
     "test": "node test.js"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "typescript": "^5.0.0"
   }
 }

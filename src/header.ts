@@ -1,0 +1,9 @@
+// ==UserScript==
+// @name         OpenAI Codex UI Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      1.8
+// @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
+// @match        https://chatgpt.com/codex*
+// @grant        none
+// ==/UserScript==
+
