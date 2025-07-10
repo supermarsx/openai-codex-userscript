@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.16';
+    const SCRIPT_VERSION = '1.17';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -302,11 +302,30 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         saveOptions(options);
     });
 
-    const repos = ['Repo A', 'Repo B', 'Repo C'];
+    let repos = [];
+
+    function parseRepoNames() {
+        const set = new Set();
+        const sidebar = document.querySelector('[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]');
+        if (sidebar) {
+            sidebar.querySelectorAll('a, li').forEach(el => {
+                const t = el.textContent?.trim();
+                if (t) set.add(t);
+            });
+        }
+        if (set.size === 0) {
+            const text = document.body.textContent || '';
+            const regex = /[\w.-]+\/[\w.-]+/g;
+            let m;
+            while ((m = regex.exec(text))) set.add(m[0]);
+        }
+        repos = Array.from(set);
+    }
 
     function renderRepos() {
         const list = repoSidebar.querySelector('#gpt-repo-list');
         if (!list) return;
+        if (repos.length === 0) parseRepoNames();
         list.innerHTML = '';
         repos.forEach(name => {
             const li = document.createElement('li');
@@ -344,6 +363,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         });
     }
 
+    parseRepoNames();
     renderRepos();
 
     versionSidebar.querySelector('#gpt-clear-open').addEventListener('click', () => clearBranches('Open'));

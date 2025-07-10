@@ -104,7 +104,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.16";
+    const SCRIPT_VERSION = "1.17";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -374,10 +374,29 @@
       options.showVersionSidebar = false;
       saveOptions(options);
     });
-    const repos = ["Repo A", "Repo B", "Repo C"];
+    let repos = [];
+    function parseRepoNames() {
+      const set = /* @__PURE__ */ new Set();
+      const sidebar = document.querySelector('[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]');
+      if (sidebar) {
+        sidebar.querySelectorAll("a, li").forEach((el) => {
+          var _a;
+          const t = (_a = el.textContent) == null ? void 0 : _a.trim();
+          if (t) set.add(t);
+        });
+      }
+      if (set.size === 0) {
+        const text = document.body.textContent || "";
+        const regex = /[\w.-]+\/[\w.-]+/g;
+        let m;
+        while (m = regex.exec(text)) set.add(m[0]);
+      }
+      repos = Array.from(set);
+    }
     function renderRepos() {
       const list = repoSidebar.querySelector("#gpt-repo-list");
       if (!list) return;
+      if (repos.length === 0) parseRepoNames();
       list.innerHTML = "";
       repos.forEach((name) => {
         const li = document.createElement("li");
@@ -412,6 +431,7 @@
         if (status === "All" || it.dataset.status === status) it.remove();
       });
     }
+    parseRepoNames();
     renderRepos();
     versionSidebar.querySelector("#gpt-clear-open").addEventListener("click", () => clearBranches("Open"));
     versionSidebar.querySelector("#gpt-clear-merged").addEventListener("click", () => clearBranches("Merged"));
