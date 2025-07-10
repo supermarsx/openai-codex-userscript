@@ -1,10 +1,36 @@
-const { JSDOM } = require('jsdom');
+const { JSDOM, ResourceLoader } = require('jsdom');
 const fs = require('fs');
 const script = fs.readFileSync('./openai-codex.user.js', 'utf8');
 
-async function runTest(html, edits = 0) {
-  const dom = new JSDOM(html, { runScripts: 'dangerously', resources: 'usable' });
+class StubLoader extends ResourceLoader {
+  fetch() {
+    return Promise.resolve(Buffer.from(''));
+  }
+}
+
+function createDom(html) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    resources: new StubLoader()
+  });
+  const store = {};
+  const localStorageMock = {
+    getItem: key => (key in store ? store[key] : null),
+    setItem: (key, value) => {
+      store[key] = String(value);
+    }
+  };
+  Object.defineProperty(dom.window, 'localStorage', {
+    configurable: true,
+    enumerable: true,
+    value: localStorageMock
+  });
   dom.window.prompt = () => 'Test suggestion';
+  return dom;
+}
+
+async function runTest(html, edits = 0) {
+  const dom = createDom(html);
   dom.window.eval(script);
   await new Promise(r => dom.window.setTimeout(r, 0));
   const dropdown = dom.window.document.getElementById('gpt-prompt-suggest-dropdown');
@@ -38,14 +64,14 @@ async function runTest(html, edits = 0) {
   console.log('Contenteditable result:', w2.document.getElementById('prompt-textarea').textContent);
 
   const taskHtml = `<div><span data-testid="task-status">Merged</span><button id="archive-btn">Archive</button></div>`;
-  const dom1 = new JSDOM(taskHtml, { runScripts: 'dangerously', resources: 'usable' });
+  const dom1 = createDom(taskHtml);
   let mergedClicked = false;
   dom1.window.document.getElementById('archive-btn').addEventListener('click', () => mergedClicked = true);
   dom1.window.eval(script);
   await new Promise(r => dom1.window.setTimeout(r, 0));
   console.log('Merged auto-archive:', mergedClicked);
 
-  const taskDom = new JSDOM(`<div><span data-testid="task-status">Open</span><button id="archive-btn">Archive</button></div>`, { runScripts: 'dangerously', resources: 'usable' });
+  const taskDom = createDom(`<div><span data-testid="task-status">Open</span><button id="archive-btn">Archive</button></div>`);
   let closedClicked = false;
   taskDom.window.document.getElementById('archive-btn').addEventListener('click', () => closedClicked = true);
   taskDom.window.eval(script);
