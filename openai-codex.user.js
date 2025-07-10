@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.12
+// @version      1.13
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -106,6 +106,7 @@
   // src/index.ts
   (function() {
     "use strict";
+    const isTesting = typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent);
     const SCRIPT_VERSION = "1.12";
     const observers = [];
     let promptInputObserver = null;
@@ -334,11 +335,13 @@
     </div>`;
     document.body.appendChild(historyModal);
     function refreshDropdown() {
-      var _a;
       if (currentPromptDiv && currentColDiv) {
         const existing = document.getElementById("gpt-prompt-suggest-dropdown");
-        if (existing) (_a = existing.closest(".grid")) == null ? void 0 : _a.remove();
-        injectDropdown(currentPromptDiv, currentColDiv);
+        if (existing) {
+          populateDropdown(existing);
+        } else {
+          injectDropdown(currentPromptDiv, currentColDiv);
+        }
       }
     }
     function renderSuggestions() {
@@ -552,11 +555,8 @@
         sel.addRange(range);
       }
     }
-    function injectDropdown(promptDiv, colDiv) {
-      if (document.getElementById("gpt-prompt-suggest-dropdown")) return;
-      const dropdown = document.createElement("select");
-      dropdown.id = "gpt-prompt-suggest-dropdown";
-      dropdown.className = "flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+    function populateDropdown(dropdown) {
+      dropdown.innerHTML = "";
       const defaultOpt = document.createElement("option");
       defaultOpt.value = "";
       defaultOpt.innerText = "\u{1F4A1} Insert a prompt suggestion...";
@@ -567,62 +567,65 @@
         opt.innerText = s.length > 100 ? s.slice(0, 100) + "..." : s;
         dropdown.appendChild(opt);
       }
-      const wrapper = document.createElement("div");
-      wrapper.className = "grid w-full gap-1.5";
-      const container = document.createElement("div");
-      container.className = "flex w-full gap-2";
-      container.appendChild(dropdown);
-      const configBtn = document.createElement("button");
-      configBtn.type = "button";
-      configBtn.textContent = "\u2699\uFE0F";
-      configBtn.title = "Settings";
-      configBtn.className = "text-sm";
-      container.appendChild(configBtn);
-      const historyBtn = document.createElement("button");
-      historyBtn.type = "button";
-      historyBtn.textContent = "\u{1F558}";
-      historyBtn.title = "History";
-      historyBtn.className = "text-sm";
-      container.appendChild(historyBtn);
-      wrapper.appendChild(container);
-      colDiv.insertBefore(wrapper, colDiv.firstChild);
-      configBtn.addEventListener("click", () => openSettings());
-      historyBtn.addEventListener("click", () => openHistory());
-      dropdown.addEventListener("change", () => {
-        const value = dropdown.value;
-        if (!value) return;
-        setPromptText(promptDiv, value);
-        dropdown.selectedIndex = 0;
-      });
+    }
+    function injectDropdown(promptDiv, colDiv) {
+      let dropdown = document.getElementById("gpt-prompt-suggest-dropdown");
+      if (!dropdown) {
+        dropdown = document.createElement("select");
+        dropdown.id = "gpt-prompt-suggest-dropdown";
+        dropdown.className = "flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+        const wrapper = document.createElement("div");
+        wrapper.className = "grid w-full gap-1.5";
+        const container = document.createElement("div");
+        container.className = "flex w-full gap-2";
+        container.appendChild(dropdown);
+        const configBtn = document.createElement("button");
+        configBtn.type = "button";
+        configBtn.textContent = "\u2699\uFE0F";
+        configBtn.title = "Settings";
+        configBtn.className = "text-sm";
+        container.appendChild(configBtn);
+        const historyBtn = document.createElement("button");
+        historyBtn.type = "button";
+        historyBtn.textContent = "\u{1F558}";
+        historyBtn.title = "History";
+        historyBtn.className = "text-sm";
+        container.appendChild(historyBtn);
+        wrapper.appendChild(container);
+        colDiv.insertBefore(wrapper, colDiv.firstChild);
+        configBtn.addEventListener("click", () => openSettings());
+        historyBtn.addEventListener("click", () => openHistory());
+        dropdown.addEventListener("change", () => {
+          const value = dropdown.value;
+          if (!value) return;
+          setPromptText(promptDiv, value);
+          dropdown.selectedIndex = 0;
+        });
+      }
+      populateDropdown(dropdown);
+      return dropdown;
     }
     function waitForPromptInput(callback) {
-      if (promptInputObserver) {
-        promptInputObserver.disconnect();
-        const idx = observers.indexOf(promptInputObserver);
-        if (idx !== -1) observers.splice(idx, 1);
+      if (!promptInputObserver) {
+        const observer = new MutationObserver(() => {
+          const promptDiv2 = findPromptInput();
+          const colDiv2 = (promptDiv2 == null ? void 0 : promptDiv2.closest(".flex-col.items-center")) || (promptDiv2 == null ? void 0 : promptDiv2.parentElement);
+          if (promptDiv2 && colDiv2) {
+            callback(promptDiv2, colDiv2);
+            if (isTesting) observer.disconnect();
+          }
+        });
+        promptInputObserver = observer;
+        observers.push(observer);
+        observer.observe(document.body, { childList: true, subtree: true });
       }
-      const observer = new MutationObserver(() => {
-        const promptDiv2 = findPromptInput();
-        const colDiv2 = (promptDiv2 == null ? void 0 : promptDiv2.closest(".flex-col.items-center")) || (promptDiv2 == null ? void 0 : promptDiv2.parentElement);
-        if (promptDiv2 && colDiv2) {
-          observer.disconnect();
-          const i = observers.indexOf(observer);
-          if (i !== -1) observers.splice(i, 1);
-          promptInputObserver = null;
-          callback(promptDiv2, colDiv2);
-        }
-      });
-      promptInputObserver = observer;
-      observers.push(observer);
-      observer.observe(document.body, { childList: true, subtree: true });
       const promptDiv = findPromptInput();
       const colDiv = (promptDiv == null ? void 0 : promptDiv.closest(".flex-col.items-center")) || (promptDiv == null ? void 0 : promptDiv.parentElement);
       if (promptDiv && colDiv) {
-        observer.disconnect();
-        const i = observers.indexOf(observer);
-        if (i !== -1) observers.splice(i, 1);
-        promptInputObserver = null;
         callback(promptDiv, colDiv);
+        if (isTesting && promptInputObserver) {
+          promptInputObserver.disconnect();
+        }
       }
     }
     waitForPromptInput((promptDiv, colDiv) => {
