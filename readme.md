@@ -35,6 +35,14 @@ The script locates the ChatGPT prompt input using a set of fallback selectors:
 If the page structure changes, update the `findPromptInput` function in
 `openai-codex.user.js` accordingly.
 
+## Installation
+
+Install the development dependencies with `npm`:
+
+```bash
+npm install
+```
+
 ## Running tests
 
 Automated tests run in Node using [jsdom](https://github.com/jsdom/jsdom).
