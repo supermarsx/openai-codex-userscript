@@ -11,6 +11,19 @@ list. A prompt will let you edit one suggestion per line. The updated entries ar
 saved under the `gpt-prompt-suggestions` key in your browser's
 `localStorage`, so your changes persist across sessions.
 
+## Settings modal
+
+A floating gear icon is added to the side of the page. Clicking it opens a modal
+where you can manage your prompt suggestions and toggle various UI options:
+
+* Switch between light and dark themes.
+* Hide the “What are we coding next?” header.
+* Hide the “Docs” navigation link.
+
+The chosen settings are stored in `localStorage` so they apply whenever the
+script runs. Tasks that end up in a merged or closed state are automatically
+archived.
+
 ## Dark mode styling
 
 A lightweight stylesheet (`shadcn.css`) controls the look of the dropdown.
