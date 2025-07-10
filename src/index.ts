@@ -494,7 +494,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
         const observer = new MutationObserver(() => {
             const promptDiv = findPromptInput();
-            const colDiv = promptDiv?.closest('.flex-col.items-center');
+            const colDiv = (promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement);
             if (promptDiv && colDiv) {
                 observer.disconnect();
                 const i = observers.indexOf(observer);
@@ -511,7 +511,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
         // Check immediately in case the element already exists
         const promptDiv = findPromptInput();
-        const colDiv = promptDiv?.closest('.flex-col.items-center');
+        const colDiv = (promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement);
         if (promptDiv && colDiv) {
             observer.disconnect();
             const i = observers.indexOf(observer);
@@ -550,7 +550,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
         const observer = new MutationObserver(() => {
             const pd = findPromptInput();
-            const cd = pd?.closest('.flex-col.items-center');
+            const cd = (pd?.closest('.flex-col.items-center') || pd?.parentElement);
             if (pd && cd && !document.getElementById('gpt-prompt-suggest-dropdown')) {
                 currentPromptDiv = pd;
                 currentColDiv = cd;
