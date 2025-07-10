@@ -9,9 +9,14 @@ async function runTest(html, edits = 0) {
   await new Promise(r => dom.window.setTimeout(r, 0));
   const dropdown = dom.window.document.getElementById('gpt-prompt-suggest-dropdown');
   if (edits > 0) {
-    const configBtn = dropdown.closest('.grid').querySelector('button');
+    const gear = dom.window.document.getElementById('gpt-settings-gear');
     for (let i = 0; i < edits; i++) {
-      configBtn.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      gear.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      await new Promise(r => dom.window.setTimeout(r, 0));
+      const addBtn = dom.window.document.querySelector('#gpt-settings-suggestions button');
+      addBtn.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      await new Promise(r => dom.window.setTimeout(r, 0));
+      dom.window.document.getElementById('gpt-settings-close').dispatchEvent(new dom.window.Event('click', { bubbles: true }));
       await new Promise(r => dom.window.setTimeout(r, 0));
     }
   }
