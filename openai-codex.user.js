@@ -45,6 +45,11 @@
     --foreground: #ececf1;
     --ring: #565869;
 }
+.userscript-force-oled {
+    --background: #000000;
+    --foreground: #ffffff;
+    --ring: #333333;
+}
 `;
     document.head.appendChild(varStyle);
 
@@ -115,7 +120,7 @@
     ];
 
     const DEFAULT_OPTIONS = {
-        dark: false,
+        theme: null,
         hideHeader: false,
         hideDocs: false,
     };
@@ -125,6 +130,9 @@
             const raw = localStorage.getItem('gpt-script-options');
             if (raw) {
                 const data = JSON.parse(raw);
+                if ('dark' in data && !('theme' in data)) {
+                    data.theme = data.dark ? 'dark' : 'light';
+                }
                 return { ...DEFAULT_OPTIONS, ...data };
             }
         } catch (e) {
@@ -187,8 +195,11 @@
     }
 
     function applyOptions() {
-        document.documentElement.classList.toggle('userscript-force-dark', options.dark);
-        document.documentElement.classList.toggle('userscript-force-light', !options.dark);
+        const root = document.documentElement;
+        root.classList.remove('userscript-force-light', 'userscript-force-dark', 'userscript-force-oled');
+        const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = options.theme || (prefersDark ? 'dark' : 'light');
+        root.classList.add(`userscript-force-${theme}`);
         toggleHeader(options.hideHeader);
         toggleDocs(options.hideDocs);
     }
@@ -204,7 +215,13 @@
     <div class="modal-content">
         <h2 class="mb-2 text-lg">Settings</h2>
         <div id="gpt-settings-suggestions"></div>
-        <label><input type="checkbox" id="gpt-setting-dark"> Dark theme</label><br>
+        <label>Theme:
+            <select id="gpt-setting-theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="oled">OLED</option>
+            </select>
+        </label><br>
         <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
         <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
@@ -270,7 +287,10 @@
 
     function openSettings() {
         renderSuggestions();
-        modal.querySelector('#gpt-setting-dark').checked = options.dark;
+        const themeSelect = modal.querySelector('#gpt-setting-theme');
+        const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const systemTheme = prefersDark ? 'dark' : 'light';
+        themeSelect.value = options.theme || systemTheme;
         modal.querySelector('#gpt-setting-header').checked = options.hideHeader;
         modal.querySelector('#gpt-setting-docs').checked = options.hideDocs;
         modal.classList.add('show');
@@ -278,7 +298,7 @@
 
     gear.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
-    modal.querySelector('#gpt-setting-dark').addEventListener('change', (e) => { options.dark = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-theme').addEventListener('change', (e) => { options.theme = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => { options.hideHeader = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-docs').addEventListener('change', (e) => { options.hideDocs = e.target.checked; saveOptions(options); applyOptions(); });
 
