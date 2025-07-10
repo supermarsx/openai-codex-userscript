@@ -31,7 +31,7 @@ If the page structure changes, update the `findPromptInput` function in
 ## Running tests
 
 Automated tests run in Node using [jsdom](https://github.com/jsdom/jsdom).
-Install dependencies once and run the test script:
+Install dependencies first to ensure `jsdom` is available, then run the test script:
 
 ```bash
 npm install
