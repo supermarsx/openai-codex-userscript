@@ -97,6 +97,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 #gpt-settings-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 #gpt-settings-modal ul { list-style: none; padding: 0; margin: 0 0 0.5rem 0; }
 #gpt-settings-modal li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+#gpt-settings-modal .settings-group { margin-bottom: 0.75rem; }
+#gpt-settings-modal .settings-group h3 { margin: 0 0 0.25rem 0; font-size: 1rem; }
 #gpt-history-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
@@ -246,27 +248,42 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     <div class="modal-content">
         <h2 class="mb-2 text-lg">Settings</h2>
         <div id="gpt-settings-suggestions"></div>
-        <label>Theme:
-            <select id="gpt-setting-theme">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="oled">OLED</option>
-            </select>
-        </label><br>
-        <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
-        <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
-        <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
-        <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
-        <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
-        <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
-        <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
-        <label><input type="checkbox" id="gpt-setting-show-repos"> Show repo sidebar</label><br>
-        <label><input type="checkbox" id="gpt-setting-show-versions"> Show version sidebar</label><br>
-        <label><input type="checkbox" id="gpt-setting-clear-closed"> Auto-clear closed branches</label><br>
-        <label><input type="checkbox" id="gpt-setting-clear-merged"> Auto-clear merged branches</label><br>
-        <label><input type="checkbox" id="gpt-setting-clear-open"> Auto-clear open branches</label><br>
-        <label><input type="checkbox" id="gpt-setting-auto-archive-merged"> Auto-archive merged tasks</label><br>
-        <label><input type="checkbox" id="gpt-setting-auto-archive-closed"> Auto-archive closed tasks</label><br>
+        <div class="settings-group">
+            <h3>Theme</h3>
+            <label>
+                <select id="gpt-setting-theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="oled">OLED</option>
+                </select>
+            </label>
+        </div>
+        <div class="settings-group">
+            <h3>Interface</h3>
+            <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
+            <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
+            <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
+            <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
+            <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
+            <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label>
+        </div>
+        <div class="settings-group">
+            <h3>Sidebars</h3>
+            <label><input type="checkbox" id="gpt-setting-show-repos"> Show repo sidebar</label><br>
+            <label><input type="checkbox" id="gpt-setting-show-versions"> Show version sidebar</label>
+        </div>
+        <div class="settings-group">
+            <h3>Branches</h3>
+            <label><input type="checkbox" id="gpt-setting-clear-closed"> Auto-clear closed branches</label><br>
+            <label><input type="checkbox" id="gpt-setting-clear-merged"> Auto-clear merged branches</label><br>
+            <label><input type="checkbox" id="gpt-setting-clear-open"> Auto-clear open branches</label><br>
+            <label><input type="checkbox" id="gpt-setting-auto-archive-merged"> Auto-archive merged tasks</label><br>
+            <label><input type="checkbox" id="gpt-setting-auto-archive-closed"> Auto-archive closed tasks</label>
+        </div>
+        <div class="settings-group">
+            <h3>Other</h3>
+            <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label>
+        </div>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
