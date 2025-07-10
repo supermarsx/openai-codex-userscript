@@ -14,6 +14,8 @@ export interface Options {
   clearClosedBranches: boolean;
   clearMergedBranches: boolean;
   clearOpenBranches: boolean;
+  autoArchiveMerged: boolean;
+  autoArchiveClosed: boolean;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -30,6 +32,8 @@ export const DEFAULT_OPTIONS: Options = {
   clearClosedBranches: false,
   clearMergedBranches: false,
   clearOpenBranches: false,
+  autoArchiveMerged: true,
+  autoArchiveClosed: true,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
