@@ -1,29 +1,12 @@
-const { JSDOM, ResourceLoader } = require('jsdom');
+const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const script = fs.readFileSync('./openai-codex.user.js', 'utf8');
 
-class StubLoader extends ResourceLoader {
-  fetch() {
-    return Promise.resolve(Buffer.from(''));
-  }
-}
-
 function createDom(html) {
   const dom = new JSDOM(html, {
+    url: 'https://chatgpt.com/codex',
     runScripts: 'dangerously',
-    resources: new StubLoader()
-  });
-  const store = {};
-  const localStorageMock = {
-    getItem: key => (key in store ? store[key] : null),
-    setItem: (key, value) => {
-      store[key] = String(value);
-    }
-  };
-  Object.defineProperty(dom.window, 'localStorage', {
-    configurable: true,
-    enumerable: true,
-    value: localStorageMock
+    resources: 'usable'
   });
   dom.window.prompt = () => 'Test suggestion';
   return dom;
