@@ -3,6 +3,8 @@
 OpenAI Codex Super UI Userscript
 
 **[[INSTALL USERSCRIPT]](https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js)**
+Install Violentmonkey from https://violentmonkey.github.io/get-it/ to run the userscript.
+
 
 This script reuses Codex's own theme variables so no extra network request is needed.
 
