@@ -6,7 +6,6 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const isTesting = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
     const SCRIPT_VERSION = '1.12';
     const observers = [];
     let promptInputObserver = null;
@@ -258,12 +257,9 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     function refreshDropdown() {
         if (currentPromptDiv && currentColDiv) {
-            const existing = document.getElementById('gpt-prompt-suggest-dropdown') as HTMLSelectElement;
-            if (existing) {
-                populateDropdown(existing);
-            } else {
-                injectDropdown(currentPromptDiv, currentColDiv);
-            }
+            const existing = document.getElementById('gpt-prompt-suggest-dropdown');
+            if (existing) existing.closest('.grid')?.remove();
+            injectDropdown(currentPromptDiv, currentColDiv);
         }
     }
 
@@ -472,8 +468,12 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     // Creates and injects the dropdown element
-    function populateDropdown(dropdown) {
-        dropdown.innerHTML = '';
+    function injectDropdown(promptDiv, colDiv) {
+        if (document.getElementById('gpt-prompt-suggest-dropdown')) return;
+
+        const dropdown = document.createElement('select');
+        dropdown.id = 'gpt-prompt-suggest-dropdown';
+        dropdown.className = 'flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
@@ -483,83 +483,80 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         for (let s of suggestions) {
             const opt = document.createElement('option');
             opt.value = s;
-            opt.innerText = s.length > 100 ? s.slice(0, 100) + '...' : s;
+            opt.innerText = s.length > 100 ? s.slice(0, 100) + "..." : s;
             dropdown.appendChild(opt);
         }
-    }
 
-    function injectDropdown(promptDiv, colDiv) {
-        let dropdown = document.getElementById('gpt-prompt-suggest-dropdown') as HTMLSelectElement;
-        if (!dropdown) {
-            dropdown = document.createElement('select');
-            dropdown.id = 'gpt-prompt-suggest-dropdown';
-            dropdown.className = 'flex h-8 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+        const wrapper = document.createElement("div");
+        wrapper.className = "grid w-full gap-1.5";
 
-            const wrapper = document.createElement('div');
-            wrapper.className = 'grid w-full gap-1.5';
+        const container = document.createElement('div');
+        container.className = 'flex w-full gap-2';
+        container.appendChild(dropdown);
 
-            const container = document.createElement('div');
-            container.className = 'flex w-full gap-2';
-            container.appendChild(dropdown);
+        const configBtn = document.createElement('button');
+        configBtn.type = 'button';
+        configBtn.textContent = '⚙️';
+        configBtn.title = 'Settings';
+        configBtn.className = 'text-sm';
+        container.appendChild(configBtn);
 
-            const configBtn = document.createElement('button');
-            configBtn.type = 'button';
-            configBtn.textContent = '⚙️';
-            configBtn.title = 'Settings';
-            configBtn.className = 'text-sm';
-            container.appendChild(configBtn);
+        const historyBtn = document.createElement('button');
+        historyBtn.type = 'button';
+        historyBtn.textContent = '🕘';
+        historyBtn.title = 'History';
+        historyBtn.className = 'text-sm';
+        container.appendChild(historyBtn);
 
-            const historyBtn = document.createElement('button');
-            historyBtn.type = 'button';
-            historyBtn.textContent = '🕘';
-            historyBtn.title = 'History';
-            historyBtn.className = 'text-sm';
-            container.appendChild(historyBtn);
+        wrapper.appendChild(container);
+        colDiv.insertBefore(wrapper, colDiv.firstChild);
 
-            wrapper.appendChild(container);
-            colDiv.insertBefore(wrapper, colDiv.firstChild);
+        configBtn.addEventListener('click', () => openSettings());
+        historyBtn.addEventListener('click', () => openHistory());
 
-            configBtn.addEventListener('click', () => openSettings());
-            historyBtn.addEventListener('click', () => openHistory());
+        dropdown.addEventListener('change', () => {
+            const value = dropdown.value;
+            if (!value) return;
 
-            dropdown.addEventListener('change', () => {
-                const value = dropdown.value;
-                if (!value) return;
-
-                setPromptText(promptDiv, value);
-                dropdown.selectedIndex = 0;
-            });
-        }
-
-        populateDropdown(dropdown);
-        return dropdown;
+            setPromptText(promptDiv, value);
+            dropdown.selectedIndex = 0;
+        });
     }
 
     // Wait until the main prompt input exists
     function waitForPromptInput(callback) {
-        if (!promptInputObserver) {
-            const observer = new MutationObserver(() => {
-                const promptDiv = findPromptInput();
-                const colDiv = promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement;
-                if (promptDiv && colDiv) {
-                    callback(promptDiv, colDiv);
-                    if (isTesting) observer.disconnect();
-                }
-            });
-
-            promptInputObserver = observer;
-            observers.push(observer);
-
-            observer.observe(document.body, { childList: true, subtree: true });
+        if (promptInputObserver) {
+            promptInputObserver.disconnect();
+            const idx = observers.indexOf(promptInputObserver);
+            if (idx !== -1) observers.splice(idx, 1);
         }
 
-        const promptDiv = findPromptInput();
-        const colDiv = promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement;
-        if (promptDiv && colDiv) {
-            callback(promptDiv, colDiv);
-            if (isTesting && promptInputObserver) {
-                promptInputObserver.disconnect();
+        const observer = new MutationObserver(() => {
+            const promptDiv = findPromptInput();
+            const colDiv = (promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement);
+            if (promptDiv && colDiv) {
+                observer.disconnect();
+                const i = observers.indexOf(observer);
+                if (i !== -1) observers.splice(i, 1);
+                promptInputObserver = null;
+                callback(promptDiv, colDiv);
             }
+        });
+
+        promptInputObserver = observer;
+        observers.push(observer);
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Check immediately in case the element already exists
+        const promptDiv = findPromptInput();
+        const colDiv = (promptDiv?.closest('.flex-col.items-center') || promptDiv?.parentElement);
+        if (promptDiv && colDiv) {
+            observer.disconnect();
+            const i = observers.indexOf(observer);
+            if (i !== -1) observers.splice(i, 1);
+            promptInputObserver = null;
+            callback(promptDiv, colDiv);
         }
     }
 
