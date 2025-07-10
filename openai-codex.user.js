@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.9
+// @version      1.10
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
-// @grant        none
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
 (() => {
@@ -106,7 +106,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.9";
+    const SCRIPT_VERSION = "1.10";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -221,10 +221,9 @@
       if (node) node.style.display = hide ? "none" : "";
     }
     function toggleDocs(hide) {
-      const res = document.evaluate("//a[contains(.,'Docs')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-      let el;
-      while (el = res.iterateNext()) {
-        el.style.display = hide ? "none" : "";
+      const links = Array.from(document.querySelectorAll("a")).filter((a) => a.textContent && a.textContent.includes("Docs"));
+      for (const link of links) {
+        link.style.display = hide ? "none" : "";
       }
     }
     function toggleLogoText(hide) {
@@ -240,10 +239,9 @@
       if (node) node.style.display = hide ? "none" : "";
     }
     function toggleEnvironments(hide) {
-      const res = document.evaluate("//button[contains(translate(., 'ENVIRONMENT', 'environment'), 'environment')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-      let el;
-      while (el = res.iterateNext()) {
-        el.style.display = hide ? "none" : "";
+      const buttons = Array.from(document.querySelectorAll("button")).filter((b) => b.textContent && b.textContent.toLowerCase().includes("environment"));
+      for (const btn of buttons) {
+        btn.style.display = hide ? "none" : "";
       }
     }
     function applyOptions() {
@@ -260,11 +258,25 @@
       toggleEnvironments(options.hideEnvironments);
     }
     async function checkForUpdates() {
-      if (typeof fetch !== "function") return;
+      const url = "https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js";
       try {
-        const resp = await fetch("https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js", { cache: "no-store" });
-        if (!resp.ok) throw new Error("Network error");
-        const txt = await resp.text();
+        const txt = await new Promise((resolve, reject) => {
+          if (typeof GM_xmlhttpRequest === "function") {
+            GM_xmlhttpRequest({
+              method: "GET",
+              url,
+              onload: (res) => resolve(res.responseText),
+              onerror: () => reject(new Error("Network error"))
+            });
+          } else if (typeof fetch === "function") {
+            fetch(url, { cache: "no-store" }).then((resp) => {
+              if (!resp.ok) throw new Error("Network error");
+              return resp.text();
+            }).then(resolve).catch(reject);
+          } else {
+            reject(new Error("No fetch available"));
+          }
+        });
         const m = txt.match(/@version\s+(\S+)/);
         if (m) {
           const latest = m[1];
