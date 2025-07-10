@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.5
-// @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
+// @version      1.6
+// @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        none
 // ==/UserScript==
@@ -10,6 +10,8 @@
 (function () {
     'use strict';
     const observers = [];
+    let currentPromptDiv = null;
+    let currentColDiv = null;
 
     window.addEventListener('beforeunload', () => {
         for (const o of observers) {
@@ -36,8 +38,62 @@
         --ring: #565869;
     }
 }
+.userscript-force-light {
+    --background: #ffffff;
+    --foreground: #18181b;
+    --ring: #d4d4d8;
+}
+.userscript-force-dark {
+    --background: #40414f;
+    --foreground: #ececf1;
+    --ring: #565869;
+}
 `;
     document.head.appendChild(varStyle);
+
+    const settingsStyle = document.createElement('style');
+    settingsStyle.textContent = `
+#gpt-settings-gear {
+    position: fixed;
+    top: 50%;
+    right: 8px;
+    z-index: 1000;
+    background: var(--background);
+    color: var(--foreground);
+    border: 1px solid var(--ring);
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+#gpt-settings-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+#gpt-settings-modal.show { display: flex; }
+#gpt-settings-modal .modal-content {
+    background: var(--background);
+    color: var(--foreground);
+    border: 1px solid var(--ring);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    max-width: 90%;
+    width: 400px;
+}
+#gpt-settings-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-settings-modal ul { list-style: none; padding: 0; margin: 0 0 0.5rem 0; }
+#gpt-settings-modal li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+`;
+    document.head.appendChild(settingsStyle);
 
     const fallbackStyle = document.createElement('style');
     fallbackStyle.textContent = `
@@ -63,6 +119,33 @@
         "Refactor this function to use async/await."
     ];
 
+    const DEFAULT_OPTIONS = {
+        dark: false,
+        hideHeader: false,
+        hideDocs: false,
+    };
+
+    function loadOptions() {
+        try {
+            const raw = localStorage.getItem('gpt-script-options');
+            if (raw) {
+                const data = JSON.parse(raw);
+                return { ...DEFAULT_OPTIONS, ...data };
+            }
+        } catch (e) {
+            console.error('Failed to load options', e);
+        }
+        return { ...DEFAULT_OPTIONS };
+    }
+
+    function saveOptions(obj) {
+        try {
+            localStorage.setItem('gpt-script-options', JSON.stringify(obj));
+        } catch (e) {
+            console.error('Failed to save options', e);
+        }
+    }
+
     function loadSuggestions() {
         try {
             const raw = localStorage.getItem('gpt-prompt-suggestions');
@@ -86,20 +169,126 @@
         }
     }
 
-    function openConfig(promptDiv, colDiv) {
-        const current = suggestions.join('\n');
-        const input = window.prompt('Edit suggestions (one per line):', current);
-        if (input === null) return;
-        suggestions = input.split(/\n+/).map(s => s.trim()).filter(Boolean);
-        saveSuggestions(suggestions);
-        const existing = document.getElementById('gpt-prompt-suggest-dropdown');
-        if (existing) {
-            existing.closest('.grid')?.remove();
-        }
-        injectDropdown(promptDiv, colDiv);
+    let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
+    let options = loadOptions();
+
+    function toggleHeader(hide) {
+        const node = document.evaluate("//*[contains(text(),'What are we coding next?')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if (node) node.style.display = hide ? 'none' : '';
     }
 
-    let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
+    function toggleDocs(hide) {
+        const res = document.evaluate("//a[contains(.,'Docs')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        let el;
+        while ((el = res.iterateNext())) {
+            el.style.display = hide ? 'none' : '';
+        }
+    }
+
+    function applyOptions() {
+        document.documentElement.classList.toggle('userscript-force-dark', options.dark);
+        document.documentElement.classList.toggle('userscript-force-light', !options.dark);
+        toggleHeader(options.hideHeader);
+        toggleDocs(options.hideDocs);
+    }
+
+    const gear = document.createElement('div');
+    gear.id = 'gpt-settings-gear';
+    gear.textContent = '⚙️';
+    document.body.appendChild(gear);
+
+    const modal = document.createElement('div');
+    modal.id = 'gpt-settings-modal';
+    modal.innerHTML = `
+    <div class="modal-content">
+        <h2 class="mb-2 text-lg">Settings</h2>
+        <div id="gpt-settings-suggestions"></div>
+        <label><input type="checkbox" id="gpt-setting-dark"> Dark theme</label><br>
+        <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
+        <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
+        <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
+    </div>`;
+    document.body.appendChild(modal);
+
+    function refreshDropdown() {
+        if (currentPromptDiv && currentColDiv) {
+            const existing = document.getElementById('gpt-prompt-suggest-dropdown');
+            if (existing) existing.closest('.grid')?.remove();
+            injectDropdown(currentPromptDiv, currentColDiv);
+        }
+    }
+
+    function renderSuggestions() {
+        const wrap = modal.querySelector('#gpt-settings-suggestions');
+        wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
+        const ul = document.createElement('ul');
+        suggestions.forEach((s, i) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = s;
+            li.appendChild(span);
+            const edit = document.createElement('button');
+            edit.textContent = 'Edit';
+            const del = document.createElement('button');
+            del.textContent = 'Remove';
+            edit.addEventListener('click', () => {
+                const inp = window.prompt('Edit suggestion:', s);
+                if (inp !== null) {
+                    suggestions[i] = inp.trim();
+                    saveSuggestions(suggestions);
+                    renderSuggestions();
+                    refreshDropdown();
+                }
+            });
+            del.addEventListener('click', () => {
+                suggestions.splice(i, 1);
+                saveSuggestions(suggestions);
+                renderSuggestions();
+                refreshDropdown();
+            });
+            const btnWrap = document.createElement('span');
+            btnWrap.appendChild(edit);
+            btnWrap.appendChild(del);
+            li.appendChild(btnWrap);
+            ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+        const addBtn = document.createElement('button');
+        addBtn.textContent = 'Add';
+        addBtn.addEventListener('click', () => {
+            const inp = window.prompt('New suggestion:');
+            if (inp) {
+                suggestions.push(inp.trim());
+                saveSuggestions(suggestions);
+                renderSuggestions();
+                refreshDropdown();
+            }
+        });
+        wrap.appendChild(addBtn);
+    }
+
+    function openSettings() {
+        renderSuggestions();
+        modal.querySelector('#gpt-setting-dark').checked = options.dark;
+        modal.querySelector('#gpt-setting-header').checked = options.hideHeader;
+        modal.querySelector('#gpt-setting-docs').checked = options.hideDocs;
+        modal.classList.add('show');
+    }
+
+    gear.addEventListener('click', openSettings);
+    modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
+    modal.querySelector('#gpt-setting-dark').addEventListener('change', (e) => { options.dark = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => { options.hideHeader = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-docs').addEventListener('change', (e) => { options.hideDocs = e.target.checked; saveOptions(options); applyOptions(); });
+
+    const pageObserver = new MutationObserver(() => {
+        toggleHeader(options.hideHeader);
+        toggleDocs(options.hideDocs);
+    });
+    observers.push(pageObserver);
+    pageObserver.observe(document.body, { childList: true, subtree: true });
+
+    applyOptions();
 
     // Returns the main prompt input using several fallbacks.
     // 1. Prefer an element with the id "prompt-textarea".
@@ -145,14 +334,14 @@
         const configBtn = document.createElement('button');
         configBtn.type = 'button';
         configBtn.textContent = '⚙️';
-        configBtn.title = 'Edit suggestions';
+        configBtn.title = 'Settings';
         configBtn.className = 'text-sm';
         container.appendChild(configBtn);
 
         wrapper.appendChild(container);
         colDiv.insertBefore(wrapper, colDiv.firstChild);
 
-        configBtn.addEventListener('click', () => openConfig(promptDiv, colDiv));
+        configBtn.addEventListener('click', () => openSettings());
 
         dropdown.addEventListener('change', () => {
             const value = dropdown.value;
@@ -204,12 +393,16 @@
     }
 
     waitForPromptInput((promptDiv, colDiv) => {
+        currentPromptDiv = promptDiv;
+        currentColDiv = colDiv;
         injectDropdown(promptDiv, colDiv);
 
         const observer = new MutationObserver(() => {
             const pd = findPromptInput();
             const cd = pd?.closest('.flex-col.items-center');
             if (pd && cd && !document.getElementById('gpt-prompt-suggest-dropdown')) {
+                currentPromptDiv = pd;
+                currentColDiv = cd;
                 injectDropdown(pd, cd);
             }
         });
