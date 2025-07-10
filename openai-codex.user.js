@@ -94,6 +94,10 @@
 #gpt-settings-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 #gpt-settings-modal ul { list-style: none; padding: 0; margin: 0 0 0.5rem 0; }
 #gpt-settings-modal li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+#gpt-history-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+#gpt-history-modal.show { display: flex; }
+#gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
+#gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 `;
     document.head.appendChild(settingsStyle);
 
@@ -184,6 +188,37 @@
     let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
     let options = loadOptions();
 
+    const MAX_HISTORY = 50;
+
+    function loadHistory() {
+        try {
+            const raw = localStorage.getItem('gpt-prompt-history');
+            const data = raw ? JSON.parse(raw) : [];
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            console.error('Failed to load history', e);
+            return [];
+        }
+    }
+
+    function saveHistory(list) {
+        try {
+            localStorage.setItem('gpt-prompt-history', JSON.stringify(list));
+        } catch (e) {
+            console.error('Failed to save history', e);
+        }
+    }
+
+    let history = loadHistory();
+
+    function addToHistory(text) {
+        text = text.trim();
+        if (!text) return;
+        history.unshift(text);
+        if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+        saveHistory(history);
+    }
+
     function toggleHeader(hide) {
         const node = document.evaluate("//*[contains(text(),'What are we coding next?')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         if (node) node.style.display = hide ? 'none' : '';
@@ -251,6 +286,16 @@
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
+
+    const historyModal = document.createElement('div');
+    historyModal.id = 'gpt-history-modal';
+    historyModal.innerHTML = `
+    <div class="modal-content">
+        <h2 class="mb-2 text-lg">Prompt History</h2>
+        <div id="gpt-history-list"></div>
+        <div class="mt-2 text-right"><button id="gpt-history-clear">Clear</button> <button id="gpt-history-close">Close</button></div>
+    </div>`;
+    document.body.appendChild(historyModal);
 
     function refreshDropdown() {
         if (currentPromptDiv && currentColDiv) {
@@ -323,8 +368,36 @@
         modal.classList.add('show');
     }
 
+    function renderHistory() {
+        const wrap = historyModal.querySelector('#gpt-history-list');
+        wrap.innerHTML = '';
+        const ul = document.createElement('ul');
+        history.forEach((h, i) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = h;
+            li.appendChild(span);
+            const useBtn = document.createElement('button');
+            useBtn.textContent = 'Use';
+            useBtn.addEventListener('click', () => {
+                setPromptText(currentPromptDiv || findPromptInput(), h);
+                historyModal.classList.remove('show');
+            });
+            li.appendChild(useBtn);
+            ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+    }
+
+    function openHistory() {
+        renderHistory();
+        historyModal.classList.add('show');
+    }
+
     gear.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
+    historyModal.querySelector('#gpt-history-close').addEventListener('click', () => historyModal.classList.remove('show'));
+    historyModal.querySelector('#gpt-history-clear').addEventListener('click', () => { history = []; saveHistory(history); renderHistory(); });
     modal.querySelector('#gpt-setting-theme').addEventListener('change', (e) => { options.theme = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => { options.hideHeader = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-docs').addEventListener('change', (e) => { options.hideDocs = e.target.checked; saveOptions(options); applyOptions(); });
@@ -349,6 +422,13 @@
         return (
             document.querySelector('[data-testid="archive-task"]') ||
             Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent))
+        );
+    }
+
+    function findSendButton() {
+        return (
+            document.querySelector('[data-testid*="send" i]') ||
+            Array.from(document.querySelectorAll('button')).find(b => /send/i.test(b.getAttribute('aria-label') || b.dataset?.testid || b.textContent))
         );
     }
 
@@ -399,6 +479,25 @@
         );
     }
 
+    function setPromptText(el, value) {
+        if (!el) return;
+        value = value || '';
+        el.focus();
+        if (el instanceof HTMLTextAreaElement) {
+            el.value = value;
+            el.setSelectionRange(value.length, value.length);
+        } else {
+            el.textContent = '';
+            el.textContent = value;
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+
     // Creates and injects the dropdown element
     function injectDropdown(promptDiv, colDiv) {
         if (document.getElementById('gpt-prompt-suggest-dropdown')) return;
@@ -433,32 +532,24 @@
         configBtn.className = 'text-sm';
         container.appendChild(configBtn);
 
+        const historyBtn = document.createElement('button');
+        historyBtn.type = 'button';
+        historyBtn.textContent = '🕘';
+        historyBtn.title = 'History';
+        historyBtn.className = 'text-sm';
+        container.appendChild(historyBtn);
+
         wrapper.appendChild(container);
         colDiv.insertBefore(wrapper, colDiv.firstChild);
 
         configBtn.addEventListener('click', () => openSettings());
+        historyBtn.addEventListener('click', () => openHistory());
 
         dropdown.addEventListener('change', () => {
             const value = dropdown.value;
             if (!value) return;
 
-            promptDiv.focus();
-
-            if (promptDiv instanceof HTMLTextAreaElement) {
-                promptDiv.value = value;
-                promptDiv.setSelectionRange(value.length, value.length);
-            } else {
-                promptDiv.textContent = '';
-                promptDiv.textContent = value;
-
-                const range = document.createRange();
-                range.selectNodeContents(promptDiv);
-                range.collapse(false);
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-
+            setPromptText(promptDiv, value);
             dropdown.selectedIndex = 0;
         });
     }
@@ -511,6 +602,21 @@
         }
 
         injectDropdown(promptDiv, colDiv);
+
+        promptDiv.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                const text = promptDiv instanceof HTMLTextAreaElement ? promptDiv.value : promptDiv.textContent;
+                addToHistory(text);
+            }
+        });
+
+        const sendBtn = findSendButton();
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => {
+                const text = promptDiv instanceof HTMLTextAreaElement ? promptDiv.value : promptDiv.textContent;
+                addToHistory(text);
+            });
+        }
 
         const observer = new MutationObserver(() => {
             const pd = findPromptInput();
