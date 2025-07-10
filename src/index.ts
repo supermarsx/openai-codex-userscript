@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.9';
+    const SCRIPT_VERSION = '1.10';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -130,10 +130,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function toggleDocs(hide) {
-        const res = document.evaluate("//a[contains(.,'Docs')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-        let el;
-        while ((el = res.iterateNext())) {
-            el.style.display = hide ? 'none' : '';
+        const links = Array.from(document.querySelectorAll('a'))
+            .filter(a => a.textContent && a.textContent.includes('Docs'));
+        for (const link of links) {
+            link.style.display = hide ? 'none' : '';
         }
     }
 
@@ -153,10 +153,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function toggleEnvironments(hide) {
-        const res = document.evaluate("//button[contains(translate(., 'ENVIRONMENT', 'environment'), 'environment')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-        let el;
-        while ((el = res.iterateNext())) {
-            el.style.display = hide ? 'none' : '';
+        const buttons = Array.from(document.querySelectorAll('button'))
+            .filter(b => b.textContent && b.textContent.toLowerCase().includes('environment'));
+        for (const btn of buttons) {
+            btn.style.display = hide ? 'none' : '';
         }
     }
 
@@ -175,11 +175,25 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     async function checkForUpdates() {
-        if (typeof fetch !== 'function') return;
+        const url = 'https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js';
         try {
-            const resp = await fetch('https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js', { cache: 'no-store' });
-            if (!resp.ok) throw new Error('Network error');
-            const txt = await resp.text();
+            const txt = await new Promise((resolve, reject) => {
+                if (typeof GM_xmlhttpRequest === 'function') {
+                    GM_xmlhttpRequest({
+                        method: 'GET',
+                        url,
+                        onload: (res) => resolve(res.responseText),
+                        onerror: () => reject(new Error('Network error')),
+                    });
+                } else if (typeof fetch === 'function') {
+                    fetch(url, { cache: 'no-store' }).then(resp => {
+                        if (!resp.ok) throw new Error('Network error');
+                        return resp.text();
+                    }).then(resolve).catch(reject);
+                } else {
+                    reject(new Error('No fetch available'));
+                }
+            });
             const m = txt.match(/@version\s+(\S+)/);
             if (m) {
                 const latest = m[1];
