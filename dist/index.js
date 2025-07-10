@@ -104,7 +104,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.14";
+    const SCRIPT_VERSION = "1.16";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -196,9 +196,9 @@
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; top: 0; bottom: 0; width: 200px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; }
-#gpt-repo-sidebar { left: 0; }
-#gpt-version-sidebar { right: 0; }
+#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; top: 60px; max-height: calc(100vh - 120px); width: 160px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; }
+#gpt-repo-sidebar { left: 10px; }
+#gpt-version-sidebar { right: 10px; }
 #gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
 `;
     document.head.appendChild(settingsStyle);
@@ -233,11 +233,13 @@
       }
     }
     function toggleLogoText(hide) {
-      const node = findByText("Codex");
-      if (node) node.style.display = hide ? "none" : "";
+      const link = document.querySelector('a[href="/codex"]');
+      const textSvg = link == null ? void 0 : link.querySelector("svg + svg");
+      if (textSvg) textSvg.style.display = hide ? "none" : "";
     }
     function toggleLogoImage(hide) {
-      const img = document.querySelector('img[alt*="Codex" i], svg[aria-label*="Codex" i]');
+      const link = document.querySelector('a[href="/codex"]');
+      const img = link == null ? void 0 : link.querySelector("svg");
       if (img) img.style.display = hide ? "none" : "";
     }
     function toggleProfile(hide) {
@@ -260,10 +262,12 @@
     }
     function applyOptions() {
       const root = document.documentElement;
-      root.classList.remove("userscript-force-light", "userscript-force-dark", "userscript-force-oled");
+      root.classList.remove("userscript-force-light", "userscript-force-dark", "userscript-force-oled", "light", "dark");
       const prefersDark = typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
       const theme = options.theme || (prefersDark ? "dark" : "light");
       root.classList.add(`userscript-force-${theme}`);
+      root.classList.add(theme);
+      root.style.colorScheme = theme;
       toggleHeader(options.hideHeader);
       toggleDocs(options.hideDocs);
       toggleLogoText(options.hideLogoText);
@@ -354,12 +358,22 @@
     document.body.appendChild(historyModal);
     const repoSidebar = document.createElement("div");
     repoSidebar.id = "gpt-repo-sidebar";
-    repoSidebar.innerHTML = '<h3>Repositories</h3><ul id="gpt-repo-list"></ul>';
+    repoSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Repositories</h3><button id="gpt-repo-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-repo-list"></ul>';
     document.body.appendChild(repoSidebar);
+    repoSidebar.querySelector("#gpt-repo-hide").addEventListener("click", () => {
+      repoSidebar.classList.add("hidden");
+      options.showRepoSidebar = false;
+      saveOptions(options);
+    });
     const versionSidebar = document.createElement("div");
     versionSidebar.id = "gpt-version-sidebar";
-    versionSidebar.innerHTML = '<h3>Versions</h3><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button id="gpt-clear-open">Clear Open</button> <button id="gpt-clear-merged">Clear Merged</button> <button id="gpt-clear-closed">Clear Closed</button> <button id="gpt-clear-all">Clear All</button></div>';
+    versionSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Versions</h3><button id="gpt-version-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button class="btn relative btn-secondary btn-small" id="gpt-clear-open">Clear Open</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-merged">Clear Merged</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-closed">Clear Closed</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-all">Clear All</button></div>';
     document.body.appendChild(versionSidebar);
+    versionSidebar.querySelector("#gpt-version-hide").addEventListener("click", () => {
+      versionSidebar.classList.add("hidden");
+      options.showVersionSidebar = false;
+      saveOptions(options);
+    });
     const repos = ["Repo A", "Repo B", "Repo C"];
     function renderRepos() {
       const list = repoSidebar.querySelector("#gpt-repo-list");
@@ -370,6 +384,7 @@
         li.textContent = name + " ";
         [5, 10, 20].forEach((n) => {
           const btn = document.createElement("button");
+          btn.className = "btn relative btn-secondary btn-small";
           btn.textContent = String(n);
           btn.addEventListener("click", () => renderVersions(name, n));
           li.appendChild(btn);
@@ -415,15 +430,18 @@
     function renderSuggestions() {
       const wrap = modal.querySelector("#gpt-settings-suggestions");
       wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
-      const ul = document.createElement("ul");
+      const table = document.createElement("table");
+      table.className = "w-full text-sm";
       suggestions.forEach((s, i) => {
-        const li = document.createElement("li");
-        const span = document.createElement("span");
-        span.textContent = s;
-        li.appendChild(span);
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.textContent = s;
+        const actions = document.createElement("td");
         const edit = document.createElement("button");
+        edit.className = "btn relative btn-secondary btn-small";
         edit.textContent = "Edit";
         const del = document.createElement("button");
+        del.className = "btn relative btn-secondary btn-small";
         del.textContent = "Remove";
         edit.addEventListener("click", () => {
           const inp = window.prompt("Edit suggestion:", s);
@@ -440,14 +458,15 @@
           renderSuggestions();
           refreshDropdown();
         });
-        const btnWrap = document.createElement("span");
-        btnWrap.appendChild(edit);
-        btnWrap.appendChild(del);
-        li.appendChild(btnWrap);
-        ul.appendChild(li);
+        actions.appendChild(edit);
+        actions.appendChild(del);
+        row.appendChild(cell);
+        row.appendChild(actions);
+        table.appendChild(row);
       });
-      wrap.appendChild(ul);
+      wrap.appendChild(table);
       const addBtn = document.createElement("button");
+      addBtn.className = "btn relative btn-secondary btn-small";
       addBtn.textContent = "Add";
       addBtn.addEventListener("click", () => {
         const inp = window.prompt("New suggestion:");
@@ -492,6 +511,7 @@
         span.textContent = h;
         li.appendChild(span);
         const useBtn = document.createElement("button");
+        useBtn.className = "btn relative btn-secondary btn-small";
         useBtn.textContent = "Use";
         useBtn.addEventListener("click", () => {
           setPromptText(currentPromptDiv || findPromptInput(), h);
@@ -682,22 +702,18 @@
       const container = document.createElement("div");
       container.className = "flex w-full gap-2";
       container.appendChild(dropdown);
-      const configBtn = document.createElement("button");
-      configBtn.type = "button";
-      configBtn.textContent = "\u2699\uFE0F";
-      configBtn.title = "Settings";
-      configBtn.className = "text-sm";
-      container.appendChild(configBtn);
-      const historyBtn = document.createElement("button");
-      historyBtn.type = "button";
-      historyBtn.textContent = "\u{1F558}";
-      historyBtn.title = "History";
-      historyBtn.className = "text-sm";
-      container.appendChild(historyBtn);
       wrapper.appendChild(container);
       colDiv.insertBefore(wrapper, colDiv.firstChild);
-      configBtn.addEventListener("click", () => openSettings());
-      historyBtn.addEventListener("click", () => openHistory());
+      const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
+      if (actionBar && !document.getElementById("gpt-history-action")) {
+        const historyBtn = document.createElement("button");
+        historyBtn.id = "gpt-history-action";
+        historyBtn.type = "button";
+        historyBtn.textContent = "History";
+        historyBtn.className = "btn relative btn-secondary btn-small";
+        historyBtn.addEventListener("click", () => openHistory());
+        actionBar.appendChild(historyBtn);
+      }
       dropdown.addEventListener("change", () => {
         const value = dropdown.value;
         if (!value) return;
