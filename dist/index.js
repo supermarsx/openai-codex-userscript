@@ -550,7 +550,7 @@
       }
       const observer = new MutationObserver(() => {
         const promptDiv2 = findPromptInput();
-        const colDiv2 = promptDiv2 == null ? void 0 : promptDiv2.closest(".flex-col.items-center");
+        const colDiv2 = (promptDiv2 == null ? void 0 : promptDiv2.closest(".flex-col.items-center")) || (promptDiv2 == null ? void 0 : promptDiv2.parentElement);
         if (promptDiv2 && colDiv2) {
           observer.disconnect();
           const i = observers.indexOf(observer);
@@ -563,7 +563,7 @@
       observers.push(observer);
       observer.observe(document.body, { childList: true, subtree: true });
       const promptDiv = findPromptInput();
-      const colDiv = promptDiv == null ? void 0 : promptDiv.closest(".flex-col.items-center");
+      const colDiv = (promptDiv == null ? void 0 : promptDiv.closest(".flex-col.items-center")) || (promptDiv == null ? void 0 : promptDiv.parentElement);
       if (promptDiv && colDiv) {
         observer.disconnect();
         const i = observers.indexOf(observer);
@@ -597,7 +597,7 @@
       }
       const observer = new MutationObserver(() => {
         const pd = findPromptInput();
-        const cd = pd == null ? void 0 : pd.closest(".flex-col.items-center");
+        const cd = (pd == null ? void 0 : pd.closest(".flex-col.items-center")) || (pd == null ? void 0 : pd.parentElement);
         if (pd && cd && !document.getElementById("gpt-prompt-suggest-dropdown")) {
           currentPromptDiv = pd;
           currentColDiv = cd;
