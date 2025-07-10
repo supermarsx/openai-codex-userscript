@@ -94,7 +94,7 @@
         saveSuggestions(suggestions);
         const existing = document.getElementById('gpt-prompt-suggest-dropdown');
         if (existing) {
-            existing.parentElement.remove();
+            existing.closest('.grid')?.remove();
         }
         injectDropdown(promptDiv, colDiv);
     }
