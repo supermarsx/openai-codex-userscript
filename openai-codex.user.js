@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.5
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex
-// @match        https://chatgpt.com/codex
+// @match        https://chatgpt.com/codex*
 // @grant        none
 // ==/UserScript==
 
