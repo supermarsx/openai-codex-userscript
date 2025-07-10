@@ -55,8 +55,9 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     settingsStyle.textContent = `
 #gpt-settings-gear {
     position: fixed;
-    top: 50%;
-    right: 8px;
+    top: auto;
+    right: 16px;
+    bottom: 16px;
     z-index: 1000;
     background: var(--background);
     color: var(--foreground);
@@ -69,6 +70,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+#gpt-settings-gear:hover {
+    background: var(--ring);
+    color: var(--background);
 }
 #gpt-settings-modal {
     position: fixed;
@@ -147,6 +152,14 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         if (node) node.style.display = hide ? 'none' : '';
     }
 
+    function toggleEnvironments(hide) {
+        const res = document.evaluate("//button[contains(translate(., 'ENVIRONMENT', 'environment'), 'environment')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        let el;
+        while ((el = res.iterateNext())) {
+            el.style.display = hide ? 'none' : '';
+        }
+    }
+
     function applyOptions() {
         const root = document.documentElement;
         root.classList.remove('userscript-force-light', 'userscript-force-dark', 'userscript-force-oled');
@@ -158,6 +171,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         toggleLogoText(options.hideLogoText);
         toggleLogoImage(options.hideLogoImage);
         toggleProfile(options.hideProfile);
+        toggleEnvironments(options.hideEnvironments);
     }
 
     async function checkForUpdates() {
@@ -205,6 +219,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
         <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
         <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
+        <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
         <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
@@ -289,6 +304,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         modal.querySelector('#gpt-setting-logo-text').checked = options.hideLogoText;
         modal.querySelector('#gpt-setting-logo-image').checked = options.hideLogoImage;
         modal.querySelector('#gpt-setting-profile').checked = options.hideProfile;
+        modal.querySelector('#gpt-setting-environments').checked = options.hideEnvironments;
         modal.querySelector('#gpt-setting-auto-updates').checked = options.autoCheckUpdates;
         modal.classList.add('show');
     }
@@ -321,7 +337,9 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     gear.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
     historyModal.querySelector('#gpt-history-close').addEventListener('click', () => historyModal.classList.remove('show'));
+    historyModal.addEventListener('click', (e) => { if (e.target === historyModal) historyModal.classList.remove('show'); });
     historyModal.querySelector('#gpt-history-clear').addEventListener('click', () => { history = []; saveHistory(history); renderHistory(); });
     modal.querySelector('#gpt-setting-theme').addEventListener('change', (e) => { options.theme = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => { options.hideHeader = e.target.checked; saveOptions(options); applyOptions(); });
@@ -329,6 +347,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     modal.querySelector('#gpt-setting-logo-text').addEventListener('change', (e) => { options.hideLogoText = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-logo-image').addEventListener('change', (e) => { options.hideLogoImage = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-profile').addEventListener('change', (e) => { options.hideProfile = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-environments').addEventListener('change', (e) => { options.hideEnvironments = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-auto-updates').addEventListener('change', (e) => { options.autoCheckUpdates = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates());
 
@@ -338,6 +357,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         toggleLogoText(options.hideLogoText);
         toggleLogoImage(options.hideLogoImage);
         toggleProfile(options.hideProfile);
+        toggleEnvironments(options.hideEnvironments);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });
