@@ -21,6 +21,7 @@ where you can manage your prompt suggestions and toggle various UI options:
 * Switch between Light, Dark and OLED themes.
 * Hide the “What are we coding next?” header.
 * Hide the “Docs” navigation link.
+* Hide the "Environments" button.
 
 The chosen settings are stored in `localStorage` so they apply whenever the
 script runs. Tasks that end up in a merged or closed state are automatically

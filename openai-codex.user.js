@@ -53,6 +53,7 @@
     hideLogoText: false,
     hideLogoImage: false,
     hideProfile: false,
+    hideEnvironments: false,
     autoCheckUpdates: true
   };
   var STORAGE_KEY = "gpt-script-options";
@@ -151,8 +152,9 @@
     settingsStyle.textContent = `
 #gpt-settings-gear {
     position: fixed;
-    top: 50%;
-    right: 8px;
+    top: auto;
+    right: 16px;
+    bottom: 16px;
     z-index: 1000;
     background: var(--background);
     color: var(--foreground);
@@ -165,6 +167,10 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+#gpt-settings-gear:hover {
+    background: var(--ring);
+    color: var(--background);
 }
 #gpt-settings-modal {
     position: fixed;
@@ -233,6 +239,13 @@
       const node = document.querySelector('[aria-label*="Profile" i], [data-testid*="profile" i], [class*="profile" i], [class*="avatar" i]');
       if (node) node.style.display = hide ? "none" : "";
     }
+    function toggleEnvironments(hide) {
+      const res = document.evaluate("//button[contains(translate(., 'ENVIRONMENT', 'environment'), 'environment')]", document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+      let el;
+      while (el = res.iterateNext()) {
+        el.style.display = hide ? "none" : "";
+      }
+    }
     function applyOptions() {
       const root = document.documentElement;
       root.classList.remove("userscript-force-light", "userscript-force-dark", "userscript-force-oled");
@@ -244,6 +257,7 @@
       toggleLogoText(options.hideLogoText);
       toggleLogoImage(options.hideLogoImage);
       toggleProfile(options.hideProfile);
+      toggleEnvironments(options.hideEnvironments);
     }
     async function checkForUpdates() {
       if (typeof fetch !== "function") return;
@@ -288,6 +302,7 @@
         <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
         <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
         <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
+        <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
         <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
@@ -369,6 +384,7 @@
       modal.querySelector("#gpt-setting-logo-text").checked = options.hideLogoText;
       modal.querySelector("#gpt-setting-logo-image").checked = options.hideLogoImage;
       modal.querySelector("#gpt-setting-profile").checked = options.hideProfile;
+      modal.querySelector("#gpt-setting-environments").checked = options.hideEnvironments;
       modal.querySelector("#gpt-setting-auto-updates").checked = options.autoCheckUpdates;
       modal.classList.add("show");
     }
@@ -398,7 +414,13 @@
     }
     gear.addEventListener("click", openSettings);
     modal.querySelector("#gpt-settings-close").addEventListener("click", () => modal.classList.remove("show"));
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("show");
+    });
     historyModal.querySelector("#gpt-history-close").addEventListener("click", () => historyModal.classList.remove("show"));
+    historyModal.addEventListener("click", (e) => {
+      if (e.target === historyModal) historyModal.classList.remove("show");
+    });
     historyModal.querySelector("#gpt-history-clear").addEventListener("click", () => {
       history = [];
       saveHistory(history);
@@ -434,6 +456,11 @@
       saveOptions(options);
       applyOptions();
     });
+    modal.querySelector("#gpt-setting-environments").addEventListener("change", (e) => {
+      options.hideEnvironments = e.target.checked;
+      saveOptions(options);
+      applyOptions();
+    });
     modal.querySelector("#gpt-setting-auto-updates").addEventListener("change", (e) => {
       options.autoCheckUpdates = e.target.checked;
       saveOptions(options);
@@ -445,6 +472,7 @@
       toggleLogoText(options.hideLogoText);
       toggleLogoImage(options.hideLogoImage);
       toggleProfile(options.hideProfile);
+      toggleEnvironments(options.hideEnvironments);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });

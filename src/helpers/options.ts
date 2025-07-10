@@ -7,6 +7,7 @@ export interface Options {
   hideLogoText: boolean;
   hideLogoImage: boolean;
   hideProfile: boolean;
+  hideEnvironments: boolean;
   autoCheckUpdates: boolean;
 }
 
@@ -17,6 +18,7 @@ export const DEFAULT_OPTIONS: Options = {
   hideLogoText: false,
   hideLogoImage: false,
   hideProfile: false,
+  hideEnvironments: false,
   autoCheckUpdates: true,
 };
 
