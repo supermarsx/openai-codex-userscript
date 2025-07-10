@@ -9,6 +9,11 @@ export interface Options {
   hideProfile: boolean;
   hideEnvironments: boolean;
   autoCheckUpdates: boolean;
+  showRepoSidebar: boolean;
+  showVersionSidebar: boolean;
+  clearClosedBranches: boolean;
+  clearMergedBranches: boolean;
+  clearOpenBranches: boolean;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -20,6 +25,11 @@ export const DEFAULT_OPTIONS: Options = {
   hideProfile: false,
   hideEnvironments: false,
   autoCheckUpdates: true,
+  showRepoSidebar: true,
+  showVersionSidebar: true,
+  clearClosedBranches: false,
+  clearMergedBranches: false,
+  clearOpenBranches: false,
 };
 
 const STORAGE_KEY = 'gpt-script-options';

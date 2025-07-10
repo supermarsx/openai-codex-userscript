@@ -45,7 +45,12 @@
     hideLogoImage: false,
     hideProfile: false,
     hideEnvironments: false,
-    autoCheckUpdates: true
+    autoCheckUpdates: true,
+    showRepoSidebar: true,
+    showVersionSidebar: true,
+    clearClosedBranches: false,
+    clearMergedBranches: false,
+    clearOpenBranches: false
   };
   var STORAGE_KEY = "gpt-script-options";
   function loadOptions() {
@@ -97,7 +102,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.12";
+    const SCRIPT_VERSION = "1.14";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -189,6 +194,10 @@
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; top: 0; bottom: 0; width: 200px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; }
+#gpt-repo-sidebar { left: 0; }
+#gpt-version-sidebar { right: 0; }
+#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
 `;
     document.head.appendChild(settingsStyle);
     const fallbackStyle = document.createElement("style");
@@ -239,6 +248,14 @@
         btn.style.display = hide ? "none" : "";
       }
     }
+    function toggleRepoSidebar(show) {
+      const el = document.getElementById("gpt-repo-sidebar");
+      if (el) el.style.display = show ? "block" : "none";
+    }
+    function toggleVersionSidebar(show) {
+      const el = document.getElementById("gpt-version-sidebar");
+      if (el) el.style.display = show ? "block" : "none";
+    }
     function applyOptions() {
       const root = document.documentElement;
       root.classList.remove("userscript-force-light", "userscript-force-dark", "userscript-force-oled");
@@ -251,6 +268,8 @@
       toggleLogoImage(options.hideLogoImage);
       toggleProfile(options.hideProfile);
       toggleEnvironments(options.hideEnvironments);
+      toggleRepoSidebar(options.showRepoSidebar);
+      toggleVersionSidebar(options.showVersionSidebar);
     }
     async function checkForUpdates() {
       const url = "https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js";
@@ -311,6 +330,11 @@
         <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
         <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
         <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
+        <label><input type="checkbox" id="gpt-setting-show-repos"> Show repo sidebar</label><br>
+        <label><input type="checkbox" id="gpt-setting-show-versions"> Show version sidebar</label><br>
+        <label><input type="checkbox" id="gpt-setting-clear-closed"> Auto-clear closed branches</label><br>
+        <label><input type="checkbox" id="gpt-setting-clear-merged"> Auto-clear merged branches</label><br>
+        <label><input type="checkbox" id="gpt-setting-clear-open"> Auto-clear open branches</label><br>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
@@ -324,6 +348,58 @@
         <div class="mt-2 text-right"><button id="gpt-history-clear">Clear</button> <button id="gpt-history-close">Close</button></div>
     </div>`;
     document.body.appendChild(historyModal);
+    const repoSidebar = document.createElement("div");
+    repoSidebar.id = "gpt-repo-sidebar";
+    repoSidebar.innerHTML = '<h3>Repositories</h3><ul id="gpt-repo-list"></ul>';
+    document.body.appendChild(repoSidebar);
+    const versionSidebar = document.createElement("div");
+    versionSidebar.id = "gpt-version-sidebar";
+    versionSidebar.innerHTML = '<h3>Versions</h3><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button id="gpt-clear-open">Clear Open</button> <button id="gpt-clear-merged">Clear Merged</button> <button id="gpt-clear-closed">Clear Closed</button> <button id="gpt-clear-all">Clear All</button></div>';
+    document.body.appendChild(versionSidebar);
+    const repos = ["Repo A", "Repo B", "Repo C"];
+    function renderRepos() {
+      const list = repoSidebar.querySelector("#gpt-repo-list");
+      if (!list) return;
+      list.innerHTML = "";
+      repos.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name + " ";
+        [5, 10, 20].forEach((n) => {
+          const btn = document.createElement("button");
+          btn.textContent = String(n);
+          btn.addEventListener("click", () => renderVersions(name, n));
+          li.appendChild(btn);
+        });
+        list.appendChild(li);
+      });
+    }
+    function renderVersions(repo, count) {
+      const list = versionSidebar.querySelector("#gpt-version-list");
+      if (!list) return;
+      list.innerHTML = "";
+      for (let i = 1; i <= count; i++) {
+        const li = document.createElement("li");
+        li.textContent = repo + " v" + i;
+        li.dataset.status = ["Open", "Closed", "Merged"][i % 3];
+        list.appendChild(li);
+      }
+      if (options.clearClosedBranches) clearBranches("Closed");
+      if (options.clearMergedBranches) clearBranches("Merged");
+      if (options.clearOpenBranches) clearBranches("Open");
+    }
+    function clearBranches(status) {
+      const items = Array.from(versionSidebar.querySelectorAll("#gpt-version-list li"));
+      items.forEach((it) => {
+        if (status === "All" || it.dataset.status === status) it.remove();
+      });
+    }
+    renderRepos();
+    versionSidebar.querySelector("#gpt-clear-open").addEventListener("click", () => clearBranches("Open"));
+    versionSidebar.querySelector("#gpt-clear-merged").addEventListener("click", () => clearBranches("Merged"));
+    versionSidebar.querySelector("#gpt-clear-closed").addEventListener("click", () => clearBranches("Closed"));
+    versionSidebar.querySelector("#gpt-clear-all").addEventListener("click", () => {
+      if (window.confirm("Clear all branches?")) clearBranches("All");
+    });
     function refreshDropdown() {
       var _a;
       if (currentPromptDiv && currentColDiv) {
@@ -393,6 +469,11 @@
       modal.querySelector("#gpt-setting-profile").checked = options.hideProfile;
       modal.querySelector("#gpt-setting-environments").checked = options.hideEnvironments;
       modal.querySelector("#gpt-setting-auto-updates").checked = options.autoCheckUpdates;
+      modal.querySelector("#gpt-setting-show-repos").checked = options.showRepoSidebar;
+      modal.querySelector("#gpt-setting-show-versions").checked = options.showVersionSidebar;
+      modal.querySelector("#gpt-setting-clear-closed").checked = options.clearClosedBranches;
+      modal.querySelector("#gpt-setting-clear-merged").checked = options.clearMergedBranches;
+      modal.querySelector("#gpt-setting-clear-open").checked = options.clearOpenBranches;
       modal.classList.add("show");
     }
     function renderHistory() {
@@ -472,6 +553,28 @@
       options.autoCheckUpdates = e.target.checked;
       saveOptions(options);
     });
+    modal.querySelector("#gpt-setting-show-repos").addEventListener("change", (e) => {
+      options.showRepoSidebar = e.target.checked;
+      saveOptions(options);
+      applyOptions();
+    });
+    modal.querySelector("#gpt-setting-show-versions").addEventListener("change", (e) => {
+      options.showVersionSidebar = e.target.checked;
+      saveOptions(options);
+      applyOptions();
+    });
+    modal.querySelector("#gpt-setting-clear-closed").addEventListener("change", (e) => {
+      options.clearClosedBranches = e.target.checked;
+      saveOptions(options);
+    });
+    modal.querySelector("#gpt-setting-clear-merged").addEventListener("change", (e) => {
+      options.clearMergedBranches = e.target.checked;
+      saveOptions(options);
+    });
+    modal.querySelector("#gpt-setting-clear-open").addEventListener("change", (e) => {
+      options.clearOpenBranches = e.target.checked;
+      saveOptions(options);
+    });
     modal.querySelector("#gpt-update-check").addEventListener("click", () => checkForUpdates());
     const pageObserver = new MutationObserver(() => {
       toggleHeader(options.hideHeader);
@@ -480,6 +583,8 @@
       toggleLogoImage(options.hideLogoImage);
       toggleProfile(options.hideProfile);
       toggleEnvironments(options.hideEnvironments);
+      toggleRepoSidebar(options.showRepoSidebar);
+      toggleVersionSidebar(options.showVersionSidebar);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });
