@@ -9,6 +9,7 @@
 
 (function () {
     'use strict';
+    const SCRIPT_VERSION = '1.9';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -126,6 +127,7 @@
         hideLogoText: false,
         hideLogoImage: false,
         hideProfile: false,
+        autoCheckUpdates: true,
     };
 
     function loadOptions() {
@@ -225,6 +227,28 @@
         toggleProfile(options.hideProfile);
     }
 
+    async function checkForUpdates() {
+        if (typeof fetch !== 'function') return;
+        try {
+            const resp = await fetch('https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js', { cache: 'no-store' });
+            if (!resp.ok) throw new Error('Network error');
+            const txt = await resp.text();
+            const m = txt.match(/@version\s+(\S+)/);
+            if (m) {
+                const latest = m[1];
+                if (latest !== SCRIPT_VERSION) {
+                    if (window.confirm(`Update available (v${latest}). Open download page?`)) {
+                        window.open('https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js', '_blank');
+                    }
+                } else {
+                    window.alert('No updates found.');
+                }
+            }
+        } catch (e) {
+            console.error('Failed to check for updates', e);
+        }
+    }
+
     const gear = document.createElement('div');
     gear.id = 'gpt-settings-gear';
     gear.textContent = '⚙️';
@@ -248,6 +272,8 @@
         <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
         <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
         <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
+        <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
+        <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
@@ -320,6 +346,7 @@
         modal.querySelector('#gpt-setting-logo-text').checked = options.hideLogoText;
         modal.querySelector('#gpt-setting-logo-image').checked = options.hideLogoImage;
         modal.querySelector('#gpt-setting-profile').checked = options.hideProfile;
+        modal.querySelector('#gpt-setting-auto-updates').checked = options.autoCheckUpdates;
         modal.classList.add('show');
     }
 
@@ -331,6 +358,8 @@
     modal.querySelector('#gpt-setting-logo-text').addEventListener('change', (e) => { options.hideLogoText = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-logo-image').addEventListener('change', (e) => { options.hideLogoImage = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-profile').addEventListener('change', (e) => { options.hideProfile = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-auto-updates').addEventListener('change', (e) => { options.autoCheckUpdates = e.target.checked; saveOptions(options); });
+    modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates());
 
     const pageObserver = new MutationObserver(() => {
         toggleHeader(options.hideHeader);
@@ -343,6 +372,9 @@
     pageObserver.observe(document.body, { childList: true, subtree: true });
 
     applyOptions();
+    if (options.autoCheckUpdates) {
+        checkForUpdates();
+    }
 
     // Automatically archive tasks based on status changes
     function findArchiveButton() {
