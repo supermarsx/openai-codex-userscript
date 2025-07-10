@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.8
+// @version      1.9
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        none
@@ -123,6 +123,9 @@
         theme: null,
         hideHeader: false,
         hideDocs: false,
+        hideLogoText: false,
+        hideLogoImage: false,
+        hideProfile: false,
     };
 
     function loadOptions() {
@@ -194,6 +197,21 @@
         }
     }
 
+    function toggleLogoText(hide) {
+        const node = document.evaluate("//*[contains(text(),'Codex')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if (node) node.style.display = hide ? 'none' : '';
+    }
+
+    function toggleLogoImage(hide) {
+        const img = document.querySelector('img[alt*="Codex" i], svg[aria-label*="Codex" i]');
+        if (img) img.style.display = hide ? 'none' : '';
+    }
+
+    function toggleProfile(hide) {
+        const node = document.querySelector('[aria-label*="Profile" i], [data-testid*="profile" i], [class*="profile" i], [class*="avatar" i]');
+        if (node) node.style.display = hide ? 'none' : '';
+    }
+
     function applyOptions() {
         const root = document.documentElement;
         root.classList.remove('userscript-force-light', 'userscript-force-dark', 'userscript-force-oled');
@@ -202,6 +220,9 @@
         root.classList.add(`userscript-force-${theme}`);
         toggleHeader(options.hideHeader);
         toggleDocs(options.hideDocs);
+        toggleLogoText(options.hideLogoText);
+        toggleLogoImage(options.hideLogoImage);
+        toggleProfile(options.hideProfile);
     }
 
     const gear = document.createElement('div');
@@ -224,6 +245,9 @@
         </label><br>
         <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
         <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
+        <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
+        <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
+        <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
@@ -293,6 +317,9 @@
         themeSelect.value = options.theme || systemTheme;
         modal.querySelector('#gpt-setting-header').checked = options.hideHeader;
         modal.querySelector('#gpt-setting-docs').checked = options.hideDocs;
+        modal.querySelector('#gpt-setting-logo-text').checked = options.hideLogoText;
+        modal.querySelector('#gpt-setting-logo-image').checked = options.hideLogoImage;
+        modal.querySelector('#gpt-setting-profile').checked = options.hideProfile;
         modal.classList.add('show');
     }
 
@@ -301,10 +328,16 @@
     modal.querySelector('#gpt-setting-theme').addEventListener('change', (e) => { options.theme = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-header').addEventListener('change', (e) => { options.hideHeader = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-docs').addEventListener('change', (e) => { options.hideDocs = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-logo-text').addEventListener('change', (e) => { options.hideLogoText = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-logo-image').addEventListener('change', (e) => { options.hideLogoImage = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-profile').addEventListener('change', (e) => { options.hideProfile = e.target.checked; saveOptions(options); applyOptions(); });
 
     const pageObserver = new MutationObserver(() => {
         toggleHeader(options.hideHeader);
         toggleDocs(options.hideDocs);
+        toggleLogoText(options.hideLogoText);
+        toggleLogoImage(options.hideLogoImage);
+        toggleProfile(options.hideProfile);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });
