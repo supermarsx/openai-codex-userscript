@@ -16,7 +16,7 @@ saved under the `gpt-prompt-suggestions` key in your browser's
 A floating gear icon is added to the side of the page. Clicking it opens a modal
 where you can manage your prompt suggestions and toggle various UI options:
 
-* Switch between light and dark themes.
+* Switch between Light, Dark and OLED themes.
 * Hide the “What are we coding next?” header.
 * Hide the “Docs” navigation link.
 
@@ -24,9 +24,9 @@ The chosen settings are stored in `localStorage` so they apply whenever the
 script runs. Tasks that end up in a merged or closed state are automatically
 archived.
 
-## Dark mode styling
+## Theme styling
 
-Theme variables for light and dark mode are injected from Codex's own CSS so the interface adapts to your system preference. A minimal fallback style keeps the dropdown readable.
+Theme variables for Light and Dark mode are injected from Codex's own CSS so the interface adapts to your system preference. An additional OLED style is provided with deeper blacks. A minimal fallback style keeps the dropdown readable.
 The script locates the ChatGPT prompt input using a set of fallback selectors:
 1. `#prompt-textarea`
 2. `[data-testid="prompt-textarea"]`
