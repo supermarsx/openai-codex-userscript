@@ -261,6 +261,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         <label><input type="checkbox" id="gpt-setting-clear-closed"> Auto-clear closed branches</label><br>
         <label><input type="checkbox" id="gpt-setting-clear-merged"> Auto-clear merged branches</label><br>
         <label><input type="checkbox" id="gpt-setting-clear-open"> Auto-clear open branches</label><br>
+        <label><input type="checkbox" id="gpt-setting-auto-archive-merged"> Auto-archive merged tasks</label><br>
+        <label><input type="checkbox" id="gpt-setting-auto-archive-closed"> Auto-archive closed tasks</label><br>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
     </div>`;
@@ -411,6 +413,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         modal.querySelector('#gpt-setting-clear-closed').checked = options.clearClosedBranches;
         modal.querySelector('#gpt-setting-clear-merged').checked = options.clearMergedBranches;
         modal.querySelector('#gpt-setting-clear-open').checked = options.clearOpenBranches;
+        modal.querySelector('#gpt-setting-auto-archive-merged').checked = options.autoArchiveMerged;
+        modal.querySelector('#gpt-setting-auto-archive-closed').checked = options.autoArchiveClosed;
         modal.classList.add('show');
     }
 
@@ -459,6 +463,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     modal.querySelector('#gpt-setting-clear-closed').addEventListener('change', (e) => { options.clearClosedBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-clear-merged').addEventListener('change', (e) => { options.clearMergedBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-clear-open').addEventListener('change', (e) => { options.clearOpenBranches = e.target.checked; saveOptions(options); });
+    modal.querySelector('#gpt-setting-auto-archive-merged').addEventListener('change', (e) => { options.autoArchiveMerged = e.target.checked; saveOptions(options); });
+    modal.querySelector('#gpt-setting-auto-archive-closed').addEventListener('change', (e) => { options.autoArchiveClosed = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates());
 
     const pageObserver = new MutationObserver(() => {
@@ -515,9 +521,9 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         if (status && status !== lastTaskStatus) {
             lastTaskStatus = status;
             if (/merged/i.test(status)) {
-                autoArchiveOnMerged();
+                if (options.autoArchiveMerged) autoArchiveOnMerged();
             } else if (/closed/i.test(status)) {
-                autoArchiveOnClosed();
+                if (options.autoArchiveClosed) autoArchiveOnClosed();
             }
         }
     }
