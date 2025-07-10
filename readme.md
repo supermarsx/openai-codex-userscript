@@ -1,7 +1,6 @@
 # openai-codex-userscript
-OpenAI Codex userscript
 
-OpenAI Codex UI Enhancer
+OpenAI Codex Super UI Userscript
 
 **[[INSTALL USERSCRIPT]](https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js)**
 
