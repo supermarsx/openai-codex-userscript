@@ -4,7 +4,7 @@ OpenAI Codex Super UI Userscript
 
 **[[INSTALL USERSCRIPT]](https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js)**
 
-This script loads a small CSS theme from `shadcn.css` in this repository. If you host the script yourself, ensure that file is available at the same path.
+This script reuses Codex's own theme variables so no extra network request is needed.
 
 The dropdown suggestions can be customised by clicking the gear icon next to the
 list. A prompt will let you edit one suggestion per line. The updated entries are
@@ -26,12 +26,7 @@ archived.
 
 ## Dark mode styling
 
-A lightweight stylesheet (`shadcn.css`) controls the look of the dropdown.
-Theme variables for light and dark mode are injected so the interface adapts to
-your system preference. The stylesheet is loaded with `crossOrigin="anonymous"`
-and its `error` event acts as a basic integrity check; if loading fails a
-minimal fallback style defined in the script is used instead.
-
+Theme variables for light and dark mode are injected from Codex's own CSS so the interface adapts to your system preference. A minimal fallback style keeps the dropdown readable.
 The script locates the ChatGPT prompt input using a set of fallback selectors:
 1. `#prompt-textarea`
 2. `[data-testid="prompt-textarea"]`
