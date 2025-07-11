@@ -18,7 +18,7 @@ async function runTest(html, edits = 0) {
   await new Promise(r => dom.window.setTimeout(r, 0));
   const dropdown = dom.window.document.getElementById('gpt-prompt-suggest-dropdown');
   if (edits > 0) {
-    const gear = dom.window.document.getElementById('gpt-settings-gear');
+      const gear = dom.window.document.getElementById('gpt-settings-btn');
     for (let i = 0; i < edits; i++) {
       gear.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
       await new Promise(r => dom.window.setTimeout(r, 0));
@@ -67,7 +67,7 @@ async function runTest(html, edits = 0) {
   const settingsDom = createDom(settingsHtml);
   settingsDom.window.eval(script);
   await new Promise(r => settingsDom.window.setTimeout(r, 0));
-  const gear2 = settingsDom.window.document.getElementById('gpt-settings-gear');
+    const gear2 = settingsDom.window.document.getElementById('gpt-settings-btn');
   gear2.dispatchEvent(new settingsDom.window.Event('click', { bubbles: true }));
   await new Promise(r => settingsDom.window.setTimeout(r, 0));
   const themeSelect = settingsDom.window.document.getElementById('gpt-setting-theme');

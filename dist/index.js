@@ -180,12 +180,15 @@
     document.head.appendChild(varStyle);
     const settingsStyle = document.createElement("style");
     settingsStyle.textContent = `
-#gpt-settings-gear {
+#gpt-action-bar {
     position: fixed;
-    top: auto;
     right: 16px;
     bottom: 16px;
     z-index: 1000;
+    display: flex;
+    gap: 8px;
+}
+#gpt-action-bar .gpt-action-btn {
     background: var(--background);
     color: var(--foreground);
     border: 1px solid var(--ring);
@@ -198,29 +201,7 @@
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-#gpt-history-gear {
-    position: fixed;
-    top: auto;
-    right: 56px;
-    bottom: 16px;
-    z-index: 1000;
-    background: var(--background);
-    color: var(--foreground);
-    border: 1px solid var(--ring);
-    width: 32px;
-    height: 32px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-#gpt-settings-gear:hover {
-    background: var(--ring);
-    color: var(--background);
-}
-#gpt-history-gear:hover {
+#gpt-action-bar .gpt-action-btn:hover {
     background: var(--ring);
     color: var(--background);
 }
@@ -406,12 +387,12 @@
     function toggleRepoSidebar(show) {
       const el = document.getElementById("gpt-repo-sidebar");
       const handle = document.getElementById("gpt-repo-handle");
-      const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
+      const actionBar2 = document.querySelector('[data-testid="composer-trailing-actions"]');
       if (el) el.classList.toggle("hidden", !show);
       if (handle) handle.classList.toggle("hidden", show);
       if (show) {
         if (repoRestoreBtn) repoRestoreBtn.remove();
-      } else if (actionBar && !repoRestoreBtn) {
+      } else if (actionBar2 && !repoRestoreBtn) {
         repoRestoreBtn = document.createElement("button");
         repoRestoreBtn.id = "gpt-repo-restore";
         repoRestoreBtn.type = "button";
@@ -422,18 +403,18 @@
           options.showRepoSidebar = true;
           saveOptions(options);
         });
-        actionBar.appendChild(repoRestoreBtn);
+        actionBar2.appendChild(repoRestoreBtn);
       }
     }
     function toggleVersionSidebar(show) {
       const el = document.getElementById("gpt-version-sidebar");
       const handle = document.getElementById("gpt-version-handle");
-      const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
+      const actionBar2 = document.querySelector('[data-testid="composer-trailing-actions"]');
       if (el) el.classList.toggle("hidden", !show);
       if (handle) handle.classList.toggle("hidden", show);
       if (show) {
         if (versionRestoreBtn) versionRestoreBtn.remove();
-      } else if (actionBar && !versionRestoreBtn) {
+      } else if (actionBar2 && !versionRestoreBtn) {
         versionRestoreBtn = document.createElement("button");
         versionRestoreBtn.id = "gpt-version-restore";
         versionRestoreBtn.type = "button";
@@ -444,7 +425,7 @@
           options.showVersionSidebar = true;
           saveOptions(options);
         });
-        actionBar.appendChild(versionRestoreBtn);
+        actionBar2.appendChild(versionRestoreBtn);
       }
     }
     function applyOptions() {
@@ -531,14 +512,29 @@
         console.error("Failed to check for updates", e);
       }
     }
-    const historyGear = document.createElement("div");
-    historyGear.id = "gpt-history-gear";
-    historyGear.textContent = "\u{1F4DC}";
-    document.body.appendChild(historyGear);
-    const gear = document.createElement("div");
-    gear.id = "gpt-settings-gear";
-    gear.textContent = "\u2699\uFE0F";
-    document.body.appendChild(gear);
+    const actionBar = document.createElement("div");
+    actionBar.id = "gpt-action-bar";
+    document.body.appendChild(actionBar);
+    const historyBtn = document.createElement("div");
+    historyBtn.id = "gpt-history-btn";
+    historyBtn.className = "gpt-action-btn";
+    historyBtn.textContent = "\u{1F4DC}";
+    actionBar.appendChild(historyBtn);
+    const repoBtn = document.createElement("div");
+    repoBtn.id = "gpt-repo-btn";
+    repoBtn.className = "gpt-action-btn";
+    repoBtn.textContent = "Repos";
+    actionBar.appendChild(repoBtn);
+    const versionBtn = document.createElement("div");
+    versionBtn.id = "gpt-version-btn";
+    versionBtn.className = "gpt-action-btn";
+    versionBtn.textContent = "Versions";
+    actionBar.appendChild(versionBtn);
+    const settingsBtn = document.createElement("div");
+    settingsBtn.id = "gpt-settings-btn";
+    settingsBtn.className = "gpt-action-btn";
+    settingsBtn.textContent = "\u2699\uFE0F";
+    actionBar.appendChild(settingsBtn);
     const modal = document.createElement("div");
     modal.id = "gpt-settings-modal";
     modal.innerHTML = `
@@ -856,8 +852,18 @@
       renderHistory();
       historyModal.classList.add("show");
     }
-    historyGear.addEventListener("click", openHistory);
-    gear.addEventListener("click", openSettings);
+    historyBtn.addEventListener("click", openHistory);
+    repoBtn.addEventListener("click", () => {
+      toggleRepoSidebar(true);
+      options.showRepoSidebar = true;
+      saveOptions(options);
+    });
+    versionBtn.addEventListener("click", () => {
+      toggleVersionSidebar(true);
+      options.showVersionSidebar = true;
+      saveOptions(options);
+    });
+    settingsBtn.addEventListener("click", openSettings);
     modal.querySelector("#gpt-settings-close").addEventListener("click", () => modal.classList.remove("show"));
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.remove("show");
