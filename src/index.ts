@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.21';
+    const SCRIPT_VERSION = '1.22';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -294,6 +294,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     modal.innerHTML = `
     <div class="modal-content">
         <h2 class="mb-2 text-lg">Settings</h2>
+        <div id="gpt-settings-version" class="mb-2 text-sm"></div>
         <div id="gpt-settings-suggestions"></div>
         <div class="settings-group">
             <h3>Theme</h3>
@@ -534,6 +535,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     function openSettings() {
         renderSuggestions();
+        const versionEl = modal.querySelector('#gpt-settings-version');
+        if (versionEl) versionEl.textContent = `Version ${SCRIPT_VERSION}`;
         const themeSelect = modal.querySelector('#gpt-setting-theme');
         const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
         const systemTheme = prefersDark ? 'dark' : 'light';
