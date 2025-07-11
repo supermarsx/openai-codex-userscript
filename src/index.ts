@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.17';
+    const SCRIPT_VERSION = '1.18';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
