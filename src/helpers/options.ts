@@ -2,7 +2,7 @@ import { loadJSON, saveJSON } from '../lib/storage';
 
 export interface Options {
   theme: string | null;
-  font: 'serif' | 'sans-serif' | 'monospace' | 'custom';
+  font: 'default' | 'serif' | 'sans-serif' | 'monospace' | 'custom';
   customFont: string;
   hideHeader: boolean;
   hideDocs: boolean;
@@ -20,11 +20,13 @@ export interface Options {
   autoArchiveClosed: boolean;
   historyLimit: number;
   disableHistory: boolean;
+  repoSidebarPos: { top: number; left: number; width: number; height: number } | null;
+  versionSidebarPos: { top: number; left: number; width: number; height: number } | null;
 }
 
 export const DEFAULT_OPTIONS: Options = {
   theme: null,
-  font: 'sans-serif',
+  font: 'default',
   customFont: '',
   hideHeader: false,
   hideDocs: false,
@@ -42,6 +44,8 @@ export const DEFAULT_OPTIONS: Options = {
   autoArchiveClosed: false,
   historyLimit: 50,
   disableHistory: false,
+  repoSidebarPos: null,
+  versionSidebarPos: null,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
