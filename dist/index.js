@@ -118,7 +118,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.25";
+    const SCRIPT_VERSION = "1.26";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -126,6 +126,17 @@
     let currentColDiv = null;
     let repoRestoreBtn = null;
     let versionRestoreBtn = null;
+    const THEME_TOKENS = {
+      light: {
+        "--brand-purple": "#824dff"
+      },
+      dark: {
+        "--brand-purple": "#b78af2"
+      },
+      oled: {
+        "--brand-purple": "#b78af2"
+      }
+    };
     window.addEventListener("beforeunload", () => {
       for (const o of observers) {
         o.disconnect();
@@ -137,28 +148,33 @@
     --background: #ffffff;
     --foreground: #18181b;
     --ring: #d4d4d8;
+    --brand-purple: #824dff;
 }
 @media (prefers-color-scheme: dark) {
     :root {
         --background: #40414f;
         --foreground: #ececf1;
         --ring: #565869;
+        --brand-purple: #b78af2;
     }
 }
 .userscript-force-light {
     --background: #ffffff;
     --foreground: #18181b;
     --ring: #d4d4d8;
+    --brand-purple: #824dff;
 }
 .userscript-force-dark {
     --background: #40414f;
     --foreground: #ececf1;
     --ring: #565869;
+    --brand-purple: #b78af2;
 }
 .userscript-force-oled {
     --background: #000000;
     --foreground: #ffffff;
     --ring: #333333;
+    --brand-purple: #b78af2;
 }
 `;
     document.head.appendChild(varStyle);
@@ -438,7 +454,12 @@
       const theme = options.theme || (prefersDark ? "dark" : "light");
       root.classList.add(`userscript-force-${theme}`);
       root.classList.add(theme);
+      root.dataset.theme = theme;
       root.style.colorScheme = theme;
+      const tokens = THEME_TOKENS[theme];
+      if (tokens) {
+        Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v));
+      }
       switch (options.font) {
         case "serif":
           root.style.fontFamily = "serif";
