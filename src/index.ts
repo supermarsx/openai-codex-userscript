@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.18';
+    const SCRIPT_VERSION = '1.19';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -71,7 +71,29 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+#gpt-history-gear {
+    position: fixed;
+    top: auto;
+    right: 56px;
+    bottom: 16px;
+    z-index: 1000;
+    background: var(--background);
+    color: var(--foreground);
+    border: 1px solid var(--ring);
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
 #gpt-settings-gear:hover {
+    background: var(--ring);
+    color: var(--background);
+}
+#gpt-history-gear:hover {
     background: var(--ring);
     color: var(--background);
 }
@@ -136,8 +158,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function toggleHeader(hide) {
-        const node = findByText('What are we coding next?');
-        if (node) node.style.display = hide ? 'none' : '';
+        const node = document.querySelector('h1.mb-4.pt-4.text-2xl');
+        if (node && node.textContent?.includes('What are we coding next?')) {
+            node.style.display = hide ? 'none' : '';
+        }
     }
 
     function toggleDocs(hide) {
@@ -166,11 +190,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function toggleEnvironments(hide) {
-        const buttons = Array.from(document.querySelectorAll('button'))
-            .filter(b => b.textContent && b.textContent.toLowerCase().includes('environment'));
-        for (const btn of buttons) {
-            btn.style.display = hide ? 'none' : '';
-        }
+        const link = document.querySelector('a[href="/codex/settings/environments"]');
+        if (link) link.style.display = hide ? 'none' : '';
     }
 
     function toggleRepoSidebar(show) {
@@ -236,6 +257,11 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
             console.error('Failed to check for updates', e);
         }
     }
+
+    const historyGear = document.createElement('div');
+    historyGear.id = 'gpt-history-gear';
+    historyGear.textContent = '📜';
+    document.body.appendChild(historyGear);
 
     const gear = document.createElement('div');
     gear.id = 'gpt-settings-gear';
@@ -501,6 +527,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         historyModal.classList.add('show');
     }
 
+    historyGear.addEventListener('click', openHistory);
     gear.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
