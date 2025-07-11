@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.19
+// @version      1.20
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -119,7 +119,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.19";
+    const SCRIPT_VERSION = "1.20";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -620,7 +620,7 @@
       history.forEach((h, i) => {
         const li = document.createElement("li");
         const span = document.createElement("span");
-        span.textContent = h;
+        span.textContent = h.split(/\r?\n/)[0];
         li.appendChild(span);
         const useBtn = document.createElement("button");
         useBtn.className = "btn relative btn-secondary btn-small";
@@ -630,6 +630,22 @@
           historyModal.classList.remove("show");
         });
         li.appendChild(useBtn);
+        const restoreBtn = document.createElement("button");
+        restoreBtn.className = "btn relative btn-secondary btn-small";
+        restoreBtn.textContent = "Restore";
+        restoreBtn.addEventListener("click", () => {
+          setPromptText(currentPromptDiv || findPromptInput(), h);
+        });
+        li.appendChild(restoreBtn);
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn relative btn-secondary btn-small";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => {
+          history.splice(i, 1);
+          saveHistory(history);
+          renderHistory();
+        });
+        li.appendChild(delBtn);
         ul.appendChild(li);
       });
       wrap.appendChild(ul);
