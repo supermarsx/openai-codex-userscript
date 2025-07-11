@@ -172,7 +172,29 @@
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+#gpt-history-gear {
+    position: fixed;
+    top: auto;
+    right: 56px;
+    bottom: 16px;
+    z-index: 1000;
+    background: var(--background);
+    color: var(--foreground);
+    border: 1px solid var(--ring);
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
 #gpt-settings-gear:hover {
+    background: var(--ring);
+    color: var(--background);
+}
+#gpt-history-gear:hover {
     background: var(--ring);
     color: var(--background);
 }
@@ -231,8 +253,11 @@
       return elements.find((el) => el.textContent && el.textContent.includes(text)) || null;
     }
     function toggleHeader(hide) {
-      const node = findByText("What are we coding next?");
-      if (node) node.style.display = hide ? "none" : "";
+      var _a;
+      const node = document.querySelector("h1.mb-4.pt-4.text-2xl");
+      if (node && ((_a = node.textContent) == null ? void 0 : _a.includes("What are we coding next?"))) {
+        node.style.display = hide ? "none" : "";
+      }
     }
     function toggleDocs(hide) {
       const links = Array.from(document.querySelectorAll("a")).filter((a) => a.textContent && a.textContent.includes("Docs"));
@@ -255,10 +280,8 @@
       if (node) node.style.display = hide ? "none" : "";
     }
     function toggleEnvironments(hide) {
-      const buttons = Array.from(document.querySelectorAll("button")).filter((b) => b.textContent && b.textContent.toLowerCase().includes("environment"));
-      for (const btn of buttons) {
-        btn.style.display = hide ? "none" : "";
-      }
+      const link = document.querySelector('a[href="/codex/settings/environments"]');
+      if (link) link.style.display = hide ? "none" : "";
     }
     function toggleRepoSidebar(show) {
       const el = document.getElementById("gpt-repo-sidebar");
@@ -333,6 +356,10 @@
         console.error("Failed to check for updates", e);
       }
     }
+    const historyGear = document.createElement("div");
+    historyGear.id = "gpt-history-gear";
+    historyGear.textContent = "\u{1F4DC}";
+    document.body.appendChild(historyGear);
     const gear = document.createElement("div");
     gear.id = "gpt-settings-gear";
     gear.textContent = "\u2699\uFE0F";
@@ -602,6 +629,7 @@
       renderHistory();
       historyModal.classList.add("show");
     }
+    historyGear.addEventListener("click", openHistory);
     gear.addEventListener("click", openSettings);
     modal.querySelector("#gpt-settings-close").addEventListener("click", () => modal.classList.remove("show"));
     modal.addEventListener("click", (e) => {
