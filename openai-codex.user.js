@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.20
+// @version      1.21
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -119,7 +119,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.20";
+    const SCRIPT_VERSION = "1.21";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -235,10 +235,14 @@
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; top: 60px; max-height: calc(100vh - 120px); width: 160px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; }
-#gpt-repo-sidebar { left: 10px; }
-#gpt-version-sidebar { right: 10px; }
+#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+#gpt-repo-sidebar { inset-inline-start: 10px; }
+#gpt-version-sidebar { inset-inline-end: 10px; }
 #gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
+#gpt-repo-handle, #gpt-version-handle { position: fixed; top: 50%; z-index: 998; background: var(--ring); color: var(--background); padding: 4px; cursor: pointer; user-select: none; }
+#gpt-repo-handle { left: 0; border-radius: 0 4px 4px 0; transform: translate(0,-50%); }
+#gpt-version-handle { right: 0; border-radius: 4px 0 0 4px; transform: translate(0,-50%); }
+#gpt-repo-handle.hidden, #gpt-version-handle.hidden { display: none; }
 `;
     document.head.appendChild(settingsStyle);
     const fallbackStyle = document.createElement("style");
@@ -294,11 +298,15 @@
     }
     function toggleRepoSidebar(show) {
       const el = document.getElementById("gpt-repo-sidebar");
-      if (el) el.style.display = show ? "block" : "none";
+      const handle = document.getElementById("gpt-repo-handle");
+      if (el) el.classList.toggle("hidden", !show);
+      if (handle) handle.classList.toggle("hidden", show);
     }
     function toggleVersionSidebar(show) {
       const el = document.getElementById("gpt-version-sidebar");
-      if (el) el.style.display = show ? "block" : "none";
+      const handle = document.getElementById("gpt-version-handle");
+      if (el) el.classList.toggle("hidden", !show);
+      if (handle) handle.classList.toggle("hidden", show);
     }
     function applyOptions() {
       const root = document.documentElement;
@@ -447,7 +455,7 @@
     repoSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Repositories</h3><button id="gpt-repo-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-repo-list"></ul>';
     document.body.appendChild(repoSidebar);
     repoSidebar.querySelector("#gpt-repo-hide").addEventListener("click", () => {
-      repoSidebar.classList.add("hidden");
+      toggleRepoSidebar(false);
       options.showRepoSidebar = false;
       saveOptions(options);
     });
@@ -456,8 +464,26 @@
     versionSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Versions</h3><button id="gpt-version-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button class="btn relative btn-secondary btn-small" id="gpt-clear-open">Clear Open</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-merged">Clear Merged</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-closed">Clear Closed</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-all">Clear All</button></div>';
     document.body.appendChild(versionSidebar);
     versionSidebar.querySelector("#gpt-version-hide").addEventListener("click", () => {
-      versionSidebar.classList.add("hidden");
+      toggleVersionSidebar(false);
       options.showVersionSidebar = false;
+      saveOptions(options);
+    });
+    const repoHandle = document.createElement("div");
+    repoHandle.id = "gpt-repo-handle";
+    repoHandle.textContent = "Repos";
+    document.body.appendChild(repoHandle);
+    repoHandle.addEventListener("click", () => {
+      toggleRepoSidebar(true);
+      options.showRepoSidebar = true;
+      saveOptions(options);
+    });
+    const versionHandle = document.createElement("div");
+    versionHandle.id = "gpt-version-handle";
+    versionHandle.textContent = "Versions";
+    document.body.appendChild(versionHandle);
+    versionHandle.addEventListener("click", () => {
+      toggleVersionSidebar(true);
+      options.showVersionSidebar = true;
       saveOptions(options);
     });
     let repos = [];
