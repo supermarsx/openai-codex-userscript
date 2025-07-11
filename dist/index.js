@@ -110,7 +110,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.22";
+    const SCRIPT_VERSION = "1.23";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -217,7 +217,55 @@
     max-width: 90%;
     width: 400px;
 }
-#gpt-settings-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-settings-modal button {
+    border: 1px solid var(--ring);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    border: 1px solid var(--ring);
+    background: var(--background);
+    color: var(--foreground);
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn:hover,
+.btn:focus-visible {
+    background: var(--ring);
+    color: var(--background);
+}
+.btn-small {
+    height: 1.5rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+}
+.btn-primary {
+    background: #10a37f;
+    border-color: #10a37f;
+    color: #fff;
+}
+.btn-primary:hover,
+.btn-primary:focus-visible {
+    background: #0f9a76;
+    color: #fff;
+}
+.btn-secondary {
+    background: var(--background);
+    color: var(--foreground);
+}
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+    background: var(--ring);
+    color: var(--background);
+}
 #gpt-settings-modal ul { list-style: none; padding: 0; margin: 0 0 0.5rem 0; }
 #gpt-settings-modal li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 #gpt-settings-modal .settings-group { margin-bottom: 0.75rem; }
@@ -429,8 +477,8 @@
             <label><input type="checkbox" id="gpt-setting-disable-history"> Disable prompt history</label><br>
             <label>History limit <input type="number" id="gpt-setting-history-limit" min="1" style="width:4rem"></label>
         </div>
-        <button id="gpt-update-check">Check for Updates</button><br>
-        <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
+        <button id="gpt-update-check" class="btn btn-primary btn-small">Check for Updates</button><br>
+        <div class="mt-2 text-right"><button id="gpt-settings-close" class="btn btn-secondary btn-small">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
     const historyModal = document.createElement("div");
@@ -439,7 +487,7 @@
     <div class="modal-content">
         <h2 class="mb-2 text-lg">Prompt History</h2>
         <div id="gpt-history-list"></div>
-        <div class="mt-2 text-right"><button id="gpt-history-clear">Clear</button> <button id="gpt-history-close">Close</button></div>
+        <div class="mt-2 text-right"><button id="gpt-history-clear" class="btn btn-secondary btn-small">Clear</button> <button id="gpt-history-close" class="btn btn-secondary btn-small">Close</button></div>
     </div>`;
     document.body.appendChild(historyModal);
     const repoSidebar = document.createElement("div");
