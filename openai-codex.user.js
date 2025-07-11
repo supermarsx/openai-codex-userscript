@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.18
+// @version      1.19
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -61,7 +61,9 @@
     clearMergedBranches: false,
     clearOpenBranches: false,
     autoArchiveMerged: false,
-    autoArchiveClosed: false
+    autoArchiveClosed: false,
+    historyLimit: 50,
+    disableHistory: false
   };
   var STORAGE_KEY = "gpt-script-options";
   function loadOptions() {
@@ -94,7 +96,6 @@
 
   // src/helpers/history.ts
   var STORAGE_KEY3 = "gpt-prompt-history";
-  var MAX_HISTORY = 50;
   function loadHistory() {
     return loadJSON(STORAGE_KEY3, []);
   }
@@ -102,10 +103,13 @@
     saveJSON(STORAGE_KEY3, list);
   }
   function addToHistory(list, text) {
+    const opts = loadOptions();
+    if (opts.disableHistory) return list;
+    const limit = opts.historyLimit || 50;
     text = text.trim();
     if (!text) return list;
     list.unshift(text);
-    if (list.length > MAX_HISTORY) list.length = MAX_HISTORY;
+    if (list.length > limit) list.length = limit;
     saveHistory(list);
     return list;
   }
@@ -113,7 +117,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.18";
+    const SCRIPT_VERSION = "1.19";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -367,7 +371,9 @@
         </div>
         <div class="settings-group">
             <h3>Other</h3>
-            <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label>
+            <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
+            <label><input type="checkbox" id="gpt-setting-disable-history"> Disable prompt history</label><br>
+            <label>History limit <input type="number" id="gpt-setting-history-limit" min="1" style="width:4rem"></label>
         </div>
         <button id="gpt-update-check">Check for Updates</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close">Close</button></div>
@@ -538,6 +544,8 @@
       modal.querySelector("#gpt-setting-profile").checked = options.hideProfile;
       modal.querySelector("#gpt-setting-environments").checked = options.hideEnvironments;
       modal.querySelector("#gpt-setting-auto-updates").checked = options.autoCheckUpdates;
+      modal.querySelector("#gpt-setting-disable-history").checked = options.disableHistory;
+      modal.querySelector("#gpt-setting-history-limit").value = String(options.historyLimit);
       modal.querySelector("#gpt-setting-show-repos").checked = options.showRepoSidebar;
       modal.querySelector("#gpt-setting-show-versions").checked = options.showVersionSidebar;
       modal.querySelector("#gpt-setting-clear-closed").checked = options.clearClosedBranches;
@@ -623,6 +631,14 @@
     });
     modal.querySelector("#gpt-setting-auto-updates").addEventListener("change", (e) => {
       options.autoCheckUpdates = e.target.checked;
+      saveOptions(options);
+    });
+    modal.querySelector("#gpt-setting-disable-history").addEventListener("change", (e) => {
+      options.disableHistory = e.target.checked;
+      saveOptions(options);
+    });
+    modal.querySelector("#gpt-setting-history-limit").addEventListener("change", (e) => {
+      options.historyLimit = parseInt(e.target.value, 10) || 1;
       saveOptions(options);
     });
     modal.querySelector("#gpt-setting-show-repos").addEventListener("change", (e) => {

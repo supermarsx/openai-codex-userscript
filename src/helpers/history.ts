@@ -1,7 +1,7 @@
 import { loadJSON, saveJSON } from '../lib/storage';
+import { loadOptions } from './options';
 
 const STORAGE_KEY = 'gpt-prompt-history';
-const MAX_HISTORY = 50;
 
 export function loadHistory(): string[] {
   return loadJSON<string[]>(STORAGE_KEY, []);
@@ -12,10 +12,13 @@ export function saveHistory(list: string[]): void {
 }
 
 export function addToHistory(list: string[], text: string): string[] {
+  const opts = loadOptions();
+  if (opts.disableHistory) return list;
+  const limit = opts.historyLimit || 50;
   text = text.trim();
   if (!text) return list;
   list.unshift(text);
-  if (list.length > MAX_HISTORY) list.length = MAX_HISTORY;
+  if (list.length > limit) list.length = limit;
   saveHistory(list);
   return list;
 }

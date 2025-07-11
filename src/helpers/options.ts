@@ -16,6 +16,8 @@ export interface Options {
   clearOpenBranches: boolean;
   autoArchiveMerged: boolean;
   autoArchiveClosed: boolean;
+  historyLimit: number;
+  disableHistory: boolean;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -34,6 +36,8 @@ export const DEFAULT_OPTIONS: Options = {
   clearOpenBranches: false,
   autoArchiveMerged: false,
   autoArchiveClosed: false,
+  historyLimit: 50,
+  disableHistory: false,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
