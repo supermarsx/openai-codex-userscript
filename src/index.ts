@@ -72,12 +72,15 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     const settingsStyle = document.createElement('style');
     settingsStyle.textContent = `
-#gpt-settings-gear {
+#gpt-action-bar {
     position: fixed;
-    top: auto;
     right: 16px;
     bottom: 16px;
     z-index: 1000;
+    display: flex;
+    gap: 8px;
+}
+#gpt-action-bar .gpt-action-btn {
     background: var(--background);
     color: var(--foreground);
     border: 1px solid var(--ring);
@@ -90,29 +93,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-#gpt-history-gear {
-    position: fixed;
-    top: auto;
-    right: 56px;
-    bottom: 16px;
-    z-index: 1000;
-    background: var(--background);
-    color: var(--foreground);
-    border: 1px solid var(--ring);
-    width: 32px;
-    height: 32px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-#gpt-settings-gear:hover {
-    background: var(--ring);
-    color: var(--background);
-}
-#gpt-history-gear:hover {
+#gpt-action-bar .gpt-action-btn:hover {
     background: var(--ring);
     color: var(--background);
 }
@@ -446,15 +427,33 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         }
     }
 
-    const historyGear = document.createElement('div');
-    historyGear.id = 'gpt-history-gear';
-    historyGear.textContent = '📜';
-    document.body.appendChild(historyGear);
+    const actionBar = document.createElement('div');
+    actionBar.id = 'gpt-action-bar';
+    document.body.appendChild(actionBar);
 
-    const gear = document.createElement('div');
-    gear.id = 'gpt-settings-gear';
-    gear.textContent = '⚙️';
-    document.body.appendChild(gear);
+    const historyBtn = document.createElement('div');
+    historyBtn.id = 'gpt-history-btn';
+    historyBtn.className = 'gpt-action-btn';
+    historyBtn.textContent = '📜';
+    actionBar.appendChild(historyBtn);
+
+    const repoBtn = document.createElement('div');
+    repoBtn.id = 'gpt-repo-btn';
+    repoBtn.className = 'gpt-action-btn';
+    repoBtn.textContent = 'Repos';
+    actionBar.appendChild(repoBtn);
+
+    const versionBtn = document.createElement('div');
+    versionBtn.id = 'gpt-version-btn';
+    versionBtn.className = 'gpt-action-btn';
+    versionBtn.textContent = 'Versions';
+    actionBar.appendChild(versionBtn);
+
+    const settingsBtn = document.createElement('div');
+    settingsBtn.id = 'gpt-settings-btn';
+    settingsBtn.className = 'gpt-action-btn';
+    settingsBtn.textContent = '⚙️';
+    actionBar.appendChild(settingsBtn);
 
     const modal = document.createElement('div');
     modal.id = 'gpt-settings-modal';
@@ -795,8 +794,18 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         historyModal.classList.add('show');
     }
 
-    historyGear.addEventListener('click', openHistory);
-    gear.addEventListener('click', openSettings);
+    historyBtn.addEventListener('click', openHistory);
+    repoBtn.addEventListener('click', () => {
+        toggleRepoSidebar(true);
+        options.showRepoSidebar = true;
+        saveOptions(options);
+    });
+    versionBtn.addEventListener('click', () => {
+        toggleVersionSidebar(true);
+        options.showVersionSidebar = true;
+        saveOptions(options);
+    });
+    settingsBtn.addEventListener('click', openSettings);
     modal.querySelector('#gpt-settings-close').addEventListener('click', () => modal.classList.remove('show'));
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
     historyModal.querySelector('#gpt-history-close').addEventListener('click', () => historyModal.classList.remove('show'));
