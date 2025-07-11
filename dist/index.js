@@ -604,6 +604,18 @@
       wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
       const table = document.createElement("table");
       table.className = "w-full text-sm";
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      const textHead = document.createElement("th");
+      textHead.textContent = "Suggestion";
+      textHead.className = "text-left";
+      const actionsHead = document.createElement("th");
+      actionsHead.textContent = "Actions";
+      headerRow.appendChild(textHead);
+      headerRow.appendChild(actionsHead);
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement("tbody");
       suggestions.forEach((s, i) => {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
@@ -634,8 +646,9 @@
         actions.appendChild(del);
         row.appendChild(cell);
         row.appendChild(actions);
-        table.appendChild(row);
+        tbody.appendChild(row);
       });
+      table.appendChild(tbody);
       wrap.appendChild(table);
       const addBtn = document.createElement("button");
       addBtn.className = "btn relative btn-secondary btn-small";
