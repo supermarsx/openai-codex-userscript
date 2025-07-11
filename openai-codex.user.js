@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.23
+// @version      1.24
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -119,7 +119,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.23";
+    const SCRIPT_VERSION = "1.24";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -941,16 +941,6 @@
       container.appendChild(dropdown);
       wrapper.appendChild(container);
       colDiv.insertBefore(wrapper, colDiv.firstChild);
-      const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
-      if (actionBar && !document.getElementById("gpt-history-action")) {
-        const historyBtn = document.createElement("button");
-        historyBtn.id = "gpt-history-action";
-        historyBtn.type = "button";
-        historyBtn.textContent = "History";
-        historyBtn.className = "btn relative btn-secondary btn-small";
-        historyBtn.addEventListener("click", () => openHistory());
-        actionBar.appendChild(historyBtn);
-      }
       dropdown.addEventListener("change", () => {
         const value = dropdown.value;
         if (!value) return;
