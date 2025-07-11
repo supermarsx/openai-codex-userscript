@@ -6,12 +6,14 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.23';
+    const SCRIPT_VERSION = '1.24';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
     let currentPromptDiv = null;
     let currentColDiv = null;
+    let repoRestoreBtn = null;
+    let versionRestoreBtn = null;
 
     window.addEventListener('beforeunload', () => {
         for (const o of observers) {
@@ -173,11 +175,12 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
 #gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
 #gpt-repo-handle, #gpt-version-handle { position: fixed; top: 50%; z-index: 998; background: var(--ring); color: var(--background); padding: 4px; cursor: pointer; user-select: none; }
+#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
 #gpt-repo-handle { left: 0; border-radius: 0 4px 4px 0; transform: translate(0,-50%); }
 #gpt-version-handle { right: 0; border-radius: 4px 0 0 4px; transform: translate(0,-50%); }
 #gpt-repo-handle.hidden, #gpt-version-handle.hidden { display: none; }
@@ -246,18 +249,97 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         if (link) link.style.display = hide ? 'none' : '';
     }
 
+    function makeSidebarInteractive(el, prefix) {
+        const header = el.querySelector('div');
+        let dragging = false;
+        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+        function savePos() {
+            const rect = el.getBoundingClientRect();
+            options[prefix + 'X'] = rect.left;
+            options[prefix + 'Y'] = rect.top;
+            options[prefix + 'Width'] = rect.width;
+            options[prefix + 'Height'] = rect.height;
+            saveOptions(options);
+        }
+
+        if (header) {
+            header.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = el.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', stopDrag);
+                e.preventDefault();
+            });
+        }
+
+        function onDrag(e) {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.style.left = startLeft + dx + 'px';
+            el.style.top = startTop + dy + 'px';
+        }
+
+        function stopDrag() {
+            if (!dragging) return;
+            dragging = false;
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+            savePos();
+        }
+
+        el.addEventListener('mouseup', () => savePos());
+    }
+
     function toggleRepoSidebar(show) {
         const el = document.getElementById('gpt-repo-sidebar');
         const handle = document.getElementById('gpt-repo-handle');
+        const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
         if (el) el.classList.toggle('hidden', !show);
         if (handle) handle.classList.toggle('hidden', show);
+        if (show) {
+            if (repoRestoreBtn) repoRestoreBtn.remove();
+        } else if (actionBar && !repoRestoreBtn) {
+            repoRestoreBtn = document.createElement('button');
+            repoRestoreBtn.id = 'gpt-repo-restore';
+            repoRestoreBtn.type = 'button';
+            repoRestoreBtn.textContent = 'Repos';
+            repoRestoreBtn.className = 'btn relative btn-secondary btn-small';
+            repoRestoreBtn.addEventListener('click', () => {
+                toggleRepoSidebar(true);
+                options.showRepoSidebar = true;
+                saveOptions(options);
+            });
+            actionBar.appendChild(repoRestoreBtn);
+        }
     }
 
     function toggleVersionSidebar(show) {
         const el = document.getElementById('gpt-version-sidebar');
         const handle = document.getElementById('gpt-version-handle');
+        const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
         if (el) el.classList.toggle('hidden', !show);
         if (handle) handle.classList.toggle('hidden', show);
+        if (show) {
+            if (versionRestoreBtn) versionRestoreBtn.remove();
+        } else if (actionBar && !versionRestoreBtn) {
+            versionRestoreBtn = document.createElement('button');
+            versionRestoreBtn.id = 'gpt-version-restore';
+            versionRestoreBtn.type = 'button';
+            versionRestoreBtn.textContent = 'Versions';
+            versionRestoreBtn.className = 'btn relative btn-secondary btn-small';
+            versionRestoreBtn.addEventListener('click', () => {
+                toggleVersionSidebar(true);
+                options.showVersionSidebar = true;
+                saveOptions(options);
+            });
+            actionBar.appendChild(versionRestoreBtn);
+        }
     }
 
     function applyOptions() {
@@ -289,6 +371,21 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         toggleEnvironments(options.hideEnvironments);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
+
+        const repoEl = document.getElementById('gpt-repo-sidebar');
+        if (repoEl) {
+            if (options.repoSidebarX !== null) repoEl.style.left = options.repoSidebarX + 'px';
+            if (options.repoSidebarY !== null) repoEl.style.top = options.repoSidebarY + 'px';
+            if (options.repoSidebarWidth !== null) repoEl.style.width = options.repoSidebarWidth + 'px';
+            if (options.repoSidebarHeight !== null) repoEl.style.height = options.repoSidebarHeight + 'px';
+        }
+        const verEl = document.getElementById('gpt-version-sidebar');
+        if (verEl) {
+            if (options.versionSidebarX !== null) verEl.style.left = options.versionSidebarX + 'px';
+            if (options.versionSidebarY !== null) verEl.style.top = options.versionSidebarY + 'px';
+            if (options.versionSidebarWidth !== null) verEl.style.width = options.versionSidebarWidth + 'px';
+            if (options.versionSidebarHeight !== null) verEl.style.height = options.versionSidebarHeight + 'px';
+        }
     }
 
     async function checkForUpdates() {
@@ -413,6 +510,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     repoSidebar.id = 'gpt-repo-sidebar';
     repoSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Repositories</h3><button id="gpt-repo-hide" class="btn relative btn-secondary btn-small">×</button></div><ul id="gpt-repo-list"></ul>';
     document.body.appendChild(repoSidebar);
+    makeSidebarInteractive(repoSidebar, 'repoSidebar');
     repoSidebar.querySelector('#gpt-repo-hide').addEventListener('click', () => {
         toggleRepoSidebar(false);
         options.showRepoSidebar = false;
@@ -423,6 +521,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     versionSidebar.id = 'gpt-version-sidebar';
     versionSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Versions</h3><button id="gpt-version-hide" class="btn relative btn-secondary btn-small">×</button></div><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button class="btn relative btn-secondary btn-small" id="gpt-clear-open">Clear Open</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-merged">Clear Merged</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-closed">Clear Closed</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-all">Clear All</button></div>';
     document.body.appendChild(versionSidebar);
+    makeSidebarInteractive(versionSidebar, 'versionSidebar');
     versionSidebar.querySelector('#gpt-version-hide').addEventListener('click', () => {
         toggleVersionSidebar(false);
         options.showVersionSidebar = false;

@@ -20,6 +20,14 @@ export interface Options {
   autoArchiveClosed: boolean;
   historyLimit: number;
   disableHistory: boolean;
+  repoSidebarX: number | null;
+  repoSidebarY: number | null;
+  repoSidebarWidth: number | null;
+  repoSidebarHeight: number | null;
+  versionSidebarX: number | null;
+  versionSidebarY: number | null;
+  versionSidebarWidth: number | null;
+  versionSidebarHeight: number | null;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -42,6 +50,14 @@ export const DEFAULT_OPTIONS: Options = {
   autoArchiveClosed: false,
   historyLimit: 50,
   disableHistory: false,
+  repoSidebarX: null,
+  repoSidebarY: null,
+  repoSidebarWidth: null,
+  repoSidebarHeight: null,
+  versionSidebarX: null,
+  versionSidebarY: null,
+  versionSidebarWidth: null,
+  versionSidebarHeight: null,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
