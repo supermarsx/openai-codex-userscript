@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.19';
+    const SCRIPT_VERSION = '1.20';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -540,8 +540,9 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         history.forEach((h, i) => {
             const li = document.createElement('li');
             const span = document.createElement('span');
-            span.textContent = h;
+            span.textContent = h.split(/\r?\n/)[0];
             li.appendChild(span);
+
             const useBtn = document.createElement('button');
             useBtn.className = 'btn relative btn-secondary btn-small';
             useBtn.textContent = 'Use';
@@ -550,6 +551,25 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
                 historyModal.classList.remove('show');
             });
             li.appendChild(useBtn);
+
+            const restoreBtn = document.createElement('button');
+            restoreBtn.className = 'btn relative btn-secondary btn-small';
+            restoreBtn.textContent = 'Restore';
+            restoreBtn.addEventListener('click', () => {
+                setPromptText(currentPromptDiv || findPromptInput(), h);
+            });
+            li.appendChild(restoreBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn relative btn-secondary btn-small';
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', () => {
+                history.splice(i, 1);
+                saveHistory(history);
+                renderHistory();
+            });
+            li.appendChild(delBtn);
+
             ul.appendChild(li);
         });
         wrap.appendChild(ul);
