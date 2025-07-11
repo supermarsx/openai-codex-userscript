@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.18
+// @version      1.19
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -48,6 +48,8 @@
   // src/helpers/options.ts
   var DEFAULT_OPTIONS = {
     theme: null,
+    font: "sans-serif",
+    customFont: "",
     hideHeader: false,
     hideDocs: false,
     hideLogoText: false,
@@ -113,7 +115,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.18";
+    const SCRIPT_VERSION = "1.19";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -279,6 +281,19 @@
       root.classList.add(`userscript-force-${theme}`);
       root.classList.add(theme);
       root.style.colorScheme = theme;
+      switch (options.font) {
+        case "serif":
+          root.style.fontFamily = "serif";
+          break;
+        case "monospace":
+          root.style.fontFamily = "monospace";
+          break;
+        case "custom":
+          root.style.fontFamily = options.customFont || "inherit";
+          break;
+        default:
+          root.style.fontFamily = "sans-serif";
+      }
       toggleHeader(options.hideHeader);
       toggleDocs(options.hideDocs);
       toggleLogoText(options.hideLogoText);
@@ -342,6 +357,18 @@
                     <option value="oled">OLED</option>
                 </select>
             </label>
+        </div>
+        <div class="settings-group">
+            <h3>Font</h3>
+            <label>
+                <select id="gpt-setting-font">
+                    <option value="sans-serif">Sans-serif</option>
+                    <option value="serif">Serif</option>
+                    <option value="monospace">Monospace</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </label>
+            <input type="text" id="gpt-setting-custom-font" placeholder="Custom font" class="mt-1">
         </div>
         <div class="settings-group">
             <h3>Interface</h3>
@@ -531,6 +558,10 @@
       const prefersDark = typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
       const systemTheme = prefersDark ? "dark" : "light";
       themeSelect.value = options.theme || systemTheme;
+      const fontSelect = modal.querySelector("#gpt-setting-font");
+      const customFontInput = modal.querySelector("#gpt-setting-custom-font");
+      fontSelect.value = options.font;
+      if (customFontInput) customFontInput.value = options.customFont;
       modal.querySelector("#gpt-setting-header").checked = options.hideHeader;
       modal.querySelector("#gpt-setting-docs").checked = options.hideDocs;
       modal.querySelector("#gpt-setting-logo-text").checked = options.hideLogoText;
@@ -588,6 +619,16 @@
     });
     modal.querySelector("#gpt-setting-theme").addEventListener("change", (e) => {
       options.theme = e.target.value;
+      saveOptions(options);
+      applyOptions();
+    });
+    modal.querySelector("#gpt-setting-font").addEventListener("change", (e) => {
+      options.font = e.target.value;
+      saveOptions(options);
+      applyOptions();
+    });
+    modal.querySelector("#gpt-setting-custom-font").addEventListener("input", (e) => {
+      options.customFont = e.target.value;
       saveOptions(options);
       applyOptions();
     });

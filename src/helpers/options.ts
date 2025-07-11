@@ -2,6 +2,8 @@ import { loadJSON, saveJSON } from '../lib/storage';
 
 export interface Options {
   theme: string | null;
+  font: 'serif' | 'sans-serif' | 'monospace' | 'custom';
+  customFont: string;
   hideHeader: boolean;
   hideDocs: boolean;
   hideLogoText: boolean;
@@ -20,6 +22,8 @@ export interface Options {
 
 export const DEFAULT_OPTIONS: Options = {
   theme: null,
+  font: 'sans-serif',
+  customFont: '',
   hideHeader: false,
   hideDocs: false,
   hideLogoText: false,
