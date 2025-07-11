@@ -58,3 +58,8 @@ npm test
 
 This executes `node test.js` and should print the results of the example DOM
 manipulations.
+
+## Development setup
+
+Always run `npm install` before executing `npm test`. The tests depend on the
+`jsdom` package, which is listed under `devDependencies` in `package.json`.
