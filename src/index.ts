@@ -930,16 +930,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         wrapper.appendChild(container);
         colDiv.insertBefore(wrapper, colDiv.firstChild);
 
-        const actionBar = document.querySelector('[data-testid="composer-trailing-actions"]');
-        if (actionBar && !document.getElementById('gpt-history-action')) {
-            const historyBtn = document.createElement('button');
-            historyBtn.id = 'gpt-history-action';
-            historyBtn.type = 'button';
-            historyBtn.textContent = 'History';
-            historyBtn.className = 'btn relative btn-secondary btn-small';
-            historyBtn.addEventListener('click', () => openHistory());
-            actionBar.appendChild(historyBtn);
-        }
+        // OpenAI Codex UI now includes a built-in history button. We no longer
+        // need to inject our custom one, so these lines were removed.
 
 
         dropdown.addEventListener('change', () => {
