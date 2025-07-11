@@ -45,14 +45,14 @@
     hideLogoImage: false,
     hideProfile: false,
     hideEnvironments: false,
-    autoCheckUpdates: true,
+    autoCheckUpdates: false,
     showRepoSidebar: true,
     showVersionSidebar: true,
     clearClosedBranches: false,
     clearMergedBranches: false,
     clearOpenBranches: false,
-    autoArchiveMerged: true,
-    autoArchiveClosed: true
+    autoArchiveMerged: false,
+    autoArchiveClosed: false
   };
   var STORAGE_KEY = "gpt-script-options";
   function loadOptions() {

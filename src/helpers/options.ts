@@ -26,14 +26,14 @@ export const DEFAULT_OPTIONS: Options = {
   hideLogoImage: false,
   hideProfile: false,
   hideEnvironments: false,
-  autoCheckUpdates: true,
+  autoCheckUpdates: false,
   showRepoSidebar: true,
   showVersionSidebar: true,
   clearClosedBranches: false,
   clearMergedBranches: false,
   clearOpenBranches: false,
-  autoArchiveMerged: true,
-  autoArchiveClosed: true,
+  autoArchiveMerged: false,
+  autoArchiveClosed: false,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
