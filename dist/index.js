@@ -118,7 +118,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.28";
+    const SCRIPT_VERSION = "1.0.19";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
