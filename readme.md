@@ -22,10 +22,14 @@ where you can manage your prompt suggestions and toggle various UI options:
 * Hide the “What are we coding next?” header.
 * Hide the “Docs” navigation link.
 * Hide the "Environments" button.
+* Toggle the repository sidebar that lists detected repositories.
+* Toggle the version sidebar that displays branches for the selected repository.
+* Enable auto-archiving when a task is merged or closed.
 
 The chosen settings are stored in `localStorage` so they apply whenever the
-script runs. Tasks that end up in a merged or closed state are automatically
-archived.
+script runs. By default both repository and version sidebars are visible while
+auto-archiving for merged and closed tasks is disabled. These behaviours can be
+toggled from the settings modal.
 
 ## Theme styling
 
