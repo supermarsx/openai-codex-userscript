@@ -1,6 +1,6 @@
 {
   "name": "openai-codex-userscript",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "scripts": {
     "build": "node build.js",
     "test": "npm run build && node test.js"

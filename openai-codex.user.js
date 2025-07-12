@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.27
+// @version      1.28
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -127,7 +127,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.26";
+    const SCRIPT_VERSION = "1.28";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -653,8 +653,27 @@
       saveOptions(options);
     });
     let repos = [];
-    function parseRepoNames() {
+    function parseRepoNames(list) {
       const set = /* @__PURE__ */ new Set();
+      if (Array.isArray(list)) {
+        list.forEach((name) => {
+          name = name.trim();
+          if (name) set.add(name);
+        });
+      } else if (typeof list === "string") {
+        list.split(/[,\n]+/).forEach((name) => {
+          name = name.trim();
+          if (name) set.add(name);
+        });
+      }
+      const env = document.querySelector('[data-testid="environment-select"], [data-testid="environment-dropdown"], select[id*=environment], select[name*=environment]');
+      if (env) {
+        env.querySelectorAll("option").forEach((opt) => {
+          var _a;
+          const t = (_a = opt.textContent) == null ? void 0 : _a.trim();
+          if (t) set.add(t);
+        });
+      }
       const sidebar = document.querySelector('[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]');
       if (sidebar) {
         sidebar.querySelectorAll("a, li").forEach((el) => {
@@ -670,13 +689,14 @@
         while (m = regex.exec(text)) set.add(m[0]);
       }
       repos = Array.from(set);
+      return repos;
     }
-    function renderRepos() {
+    function renderRepos(source) {
       const list = repoSidebar.querySelector("#gpt-repo-list");
       if (!list) return;
-      if (repos.length === 0) parseRepoNames();
+      const names = parseRepoNames(source);
       list.innerHTML = "";
-      repos.forEach((name) => {
+      names.forEach((name) => {
         const li = document.createElement("li");
         li.textContent = name + " ";
         [5, 10, 20].forEach((n) => {
@@ -709,7 +729,6 @@
         if (status === "All" || it.dataset.status === status) it.remove();
       });
     }
-    parseRepoNames();
     renderRepos();
     versionSidebar.querySelector("#gpt-clear-open").addEventListener("click", () => clearBranches("Open"));
     versionSidebar.querySelector("#gpt-clear-merged").addEventListener("click", () => clearBranches("Merged"));
