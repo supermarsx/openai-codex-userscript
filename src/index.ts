@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.0.19';
+    const SCRIPT_VERSION = '1.0.20';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -92,10 +92,31 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: relative;
 }
 #gpt-action-bar .gpt-action-btn:hover {
     background: var(--ring);
     color: var(--background);
+}
+#gpt-action-bar .gpt-action-btn::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--background);
+    color: var(--foreground);
+    border: 1px solid var(--ring);
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    display: none;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+#gpt-action-bar .gpt-action-btn:hover::after {
+    display: block;
 }
 #gpt-settings-modal {
     position: fixed;
@@ -115,6 +136,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     padding: 1rem;
     max-width: 90%;
     width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 #gpt-settings-modal button {
     border: 1px solid var(--ring);
@@ -171,16 +194,16 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 #gpt-settings-modal .settings-group h3 { margin: 0 0 0.25rem 0; font-size: 1rem; }
 #gpt-history-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
 #gpt-history-modal.show { display: flex; }
-#gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; }
+#gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 #gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
 #gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
-#gpt-repo-handle, #gpt-version-handle { position: fixed; top: 50%; z-index: 998; background: var(--ring); color: var(--background); padding: 4px; cursor: pointer; user-select: none; }
+#gpt-repo-handle, #gpt-version-handle { position: fixed; top: 50%; z-index: 998; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); width: 32px; height: 32px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transform: translateY(-50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 #gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
-#gpt-repo-handle { left: 0; border-radius: 0 4px 4px 0; transform: translate(0,-50%); }
-#gpt-version-handle { right: 0; border-radius: 4px 0 0 4px; transform: translate(0,-50%); }
+#gpt-repo-handle { left: 8px; }
+#gpt-version-handle { right: 8px; }
 #gpt-repo-handle.hidden, #gpt-version-handle.hidden { display: none; }
 `;
     document.head.appendChild(settingsStyle);
@@ -306,7 +329,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
             repoRestoreBtn = document.createElement('button');
             repoRestoreBtn.id = 'gpt-repo-restore';
             repoRestoreBtn.type = 'button';
-            repoRestoreBtn.textContent = 'Repos';
+            repoRestoreBtn.textContent = '📁';
             repoRestoreBtn.className = 'btn relative btn-secondary btn-small';
             repoRestoreBtn.addEventListener('click', () => {
                 toggleRepoSidebar(true);
@@ -329,7 +352,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
             versionRestoreBtn = document.createElement('button');
             versionRestoreBtn.id = 'gpt-version-restore';
             versionRestoreBtn.type = 'button';
-            versionRestoreBtn.textContent = 'Versions';
+            versionRestoreBtn.textContent = '🔖';
             versionRestoreBtn.className = 'btn relative btn-secondary btn-small';
             versionRestoreBtn.addEventListener('click', () => {
                 toggleVersionSidebar(true);
@@ -435,24 +458,28 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     historyBtn.id = 'gpt-history-btn';
     historyBtn.className = 'gpt-action-btn';
     historyBtn.textContent = '📜';
+    historyBtn.setAttribute('data-label', 'History');
     actionBar.appendChild(historyBtn);
 
     const repoBtn = document.createElement('div');
     repoBtn.id = 'gpt-repo-btn';
     repoBtn.className = 'gpt-action-btn';
-    repoBtn.textContent = 'Repos';
+    repoBtn.textContent = '📁';
+    repoBtn.setAttribute('data-label', 'Repos');
     actionBar.appendChild(repoBtn);
 
     const versionBtn = document.createElement('div');
     versionBtn.id = 'gpt-version-btn';
     versionBtn.className = 'gpt-action-btn';
-    versionBtn.textContent = 'Versions';
+    versionBtn.textContent = '🔖';
+    versionBtn.setAttribute('data-label', 'Versions');
     actionBar.appendChild(versionBtn);
 
     const settingsBtn = document.createElement('div');
     settingsBtn.id = 'gpt-settings-btn';
     settingsBtn.className = 'gpt-action-btn';
     settingsBtn.textContent = '⚙️';
+    settingsBtn.setAttribute('data-label', 'Settings');
     actionBar.appendChild(settingsBtn);
 
     const modal = document.createElement('div');
@@ -551,7 +578,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     const repoHandle = document.createElement('div');
     repoHandle.id = 'gpt-repo-handle';
-    repoHandle.textContent = 'Repos';
+    repoHandle.textContent = '📁';
     document.body.appendChild(repoHandle);
     repoHandle.addEventListener('click', () => {
         toggleRepoSidebar(true);
@@ -561,7 +588,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 
     const versionHandle = document.createElement('div');
     versionHandle.id = 'gpt-version-handle';
-    versionHandle.textContent = 'Versions';
+    versionHandle.textContent = '🔖';
     document.body.appendChild(versionHandle);
     versionHandle.addEventListener('click', () => {
         toggleVersionSidebar(true);
@@ -777,7 +804,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         history.forEach((h, i) => {
             const li = document.createElement('li');
             const span = document.createElement('span');
-            span.textContent = h.split(/\r?\n/)[0];
+            const first = h.split(/\r?\n/)[0];
+            span.textContent = first.length > 30 ? first.slice(0, 30) + '…' : first;
             li.appendChild(span);
 
             const useBtn = document.createElement('button');
