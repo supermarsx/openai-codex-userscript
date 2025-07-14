@@ -118,14 +118,12 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.20";
+    const SCRIPT_VERSION = "1.0.21";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
     let currentPromptDiv = null;
     let currentColDiv = null;
-    let repoRestoreBtn = null;
-    let versionRestoreBtn = null;
     const THEME_TOKENS = {
       light: {
         "--brand-purple": "#824dff"
@@ -407,49 +405,55 @@
       }
       el.addEventListener("mouseup", () => savePos());
     }
+    function ensureSidebarInBounds(el, prefix) {
+      const rect = el.getBoundingClientRect();
+      const margin = 10;
+      let left = rect.left;
+      let top = rect.top;
+      const maxX = window.innerWidth - rect.width - margin;
+      const maxY = window.innerHeight - rect.height - margin;
+      let changed = false;
+      if (left < margin) {
+        left = margin;
+        changed = true;
+      }
+      if (left > maxX) {
+        left = maxX;
+        changed = true;
+      }
+      if (top < margin) {
+        top = margin;
+        changed = true;
+      }
+      if (top > maxY) {
+        top = maxY;
+        changed = true;
+      }
+      if (changed) {
+        el.style.left = left + "px";
+        el.style.top = top + "px";
+        options[prefix + "X"] = left;
+        options[prefix + "Y"] = top;
+        saveOptions(options);
+      }
+    }
     function toggleRepoSidebar(show) {
       const el = document.getElementById("gpt-repo-sidebar");
       const handle = document.getElementById("gpt-repo-handle");
-      const actionBar2 = document.querySelector('[data-testid="composer-trailing-actions"]');
-      if (el) el.classList.toggle("hidden", !show);
-      if (handle) handle.classList.toggle("hidden", show);
-      if (show) {
-        if (repoRestoreBtn) repoRestoreBtn.remove();
-      } else if (actionBar2 && !repoRestoreBtn) {
-        repoRestoreBtn = document.createElement("button");
-        repoRestoreBtn.id = "gpt-repo-restore";
-        repoRestoreBtn.type = "button";
-        repoRestoreBtn.textContent = "\u{1F4C1}";
-        repoRestoreBtn.className = "btn relative btn-secondary btn-small";
-        repoRestoreBtn.addEventListener("click", () => {
-          toggleRepoSidebar(true);
-          options.showRepoSidebar = true;
-          saveOptions(options);
-        });
-        actionBar2.appendChild(repoRestoreBtn);
+      if (el) {
+        el.classList.toggle("hidden", !show);
+        if (show) ensureSidebarInBounds(el, "repoSidebar");
       }
+      if (handle) handle.classList.toggle("hidden", show);
     }
     function toggleVersionSidebar(show) {
       const el = document.getElementById("gpt-version-sidebar");
       const handle = document.getElementById("gpt-version-handle");
-      const actionBar2 = document.querySelector('[data-testid="composer-trailing-actions"]');
-      if (el) el.classList.toggle("hidden", !show);
-      if (handle) handle.classList.toggle("hidden", show);
-      if (show) {
-        if (versionRestoreBtn) versionRestoreBtn.remove();
-      } else if (actionBar2 && !versionRestoreBtn) {
-        versionRestoreBtn = document.createElement("button");
-        versionRestoreBtn.id = "gpt-version-restore";
-        versionRestoreBtn.type = "button";
-        versionRestoreBtn.textContent = "\u{1F516}";
-        versionRestoreBtn.className = "btn relative btn-secondary btn-small";
-        versionRestoreBtn.addEventListener("click", () => {
-          toggleVersionSidebar(true);
-          options.showVersionSidebar = true;
-          saveOptions(options);
-        });
-        actionBar2.appendChild(versionRestoreBtn);
+      if (el) {
+        el.classList.toggle("hidden", !show);
+        if (show) ensureSidebarInBounds(el, "versionSidebar");
       }
+      if (handle) handle.classList.toggle("hidden", show);
     }
     function applyOptions() {
       const root = document.documentElement;
@@ -491,6 +495,7 @@
         if (options.repoSidebarY !== null) repoEl.style.top = options.repoSidebarY + "px";
         if (options.repoSidebarWidth !== null) repoEl.style.width = options.repoSidebarWidth + "px";
         if (options.repoSidebarHeight !== null) repoEl.style.height = options.repoSidebarHeight + "px";
+        ensureSidebarInBounds(repoEl, "repoSidebar");
       }
       const verEl = document.getElementById("gpt-version-sidebar");
       if (verEl) {
@@ -498,6 +503,7 @@
         if (options.versionSidebarY !== null) verEl.style.top = options.versionSidebarY + "px";
         if (options.versionSidebarWidth !== null) verEl.style.width = options.versionSidebarWidth + "px";
         if (options.versionSidebarHeight !== null) verEl.style.height = options.versionSidebarHeight + "px";
+        ensureSidebarInBounds(verEl, "versionSidebar");
       }
     }
     async function checkForUpdates() {
@@ -619,7 +625,9 @@
             <label><input type="checkbox" id="gpt-setting-disable-history"> Disable prompt history</label><br>
             <label>History limit <input type="number" id="gpt-setting-history-limit" min="1" style="width:4rem"></label>
         </div>
-        <button id="gpt-update-check" class="btn btn-primary btn-small">Check for Updates</button><br>
+        <button id="gpt-update-check" class="btn btn-primary btn-small">Check for Updates</button>
+        <button id="gpt-reset-defaults" class="btn btn-secondary btn-small">Reset Defaults</button>
+        <button id="gpt-reset-windows" class="btn btn-secondary btn-small">Reset Windows</button><br>
         <div class="mt-2 text-right"><button id="gpt-settings-close" class="btn btn-secondary btn-small">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
@@ -901,13 +909,17 @@
     }
     historyBtn.addEventListener("click", openHistory);
     repoBtn.addEventListener("click", () => {
-      toggleRepoSidebar(true);
-      options.showRepoSidebar = true;
+      const el = document.getElementById("gpt-repo-sidebar");
+      const show = !el || el.classList.contains("hidden");
+      toggleRepoSidebar(show);
+      options.showRepoSidebar = show;
       saveOptions(options);
     });
     versionBtn.addEventListener("click", () => {
-      toggleVersionSidebar(true);
-      options.showVersionSidebar = true;
+      const el = document.getElementById("gpt-version-sidebar");
+      const show = !el || el.classList.contains("hidden");
+      toggleVersionSidebar(show);
+      options.showVersionSidebar = show;
       saveOptions(options);
     });
     settingsBtn.addEventListener("click", openSettings);
@@ -1012,6 +1024,18 @@
       saveOptions(options);
     });
     modal.querySelector("#gpt-update-check").addEventListener("click", () => checkForUpdates());
+    modal.querySelector("#gpt-reset-defaults").addEventListener("click", () => {
+      options = __spreadValues({}, DEFAULT_OPTIONS);
+      saveOptions(options);
+      applyOptions();
+      openSettings();
+    });
+    modal.querySelector("#gpt-reset-windows").addEventListener("click", () => {
+      options.repoSidebarX = options.repoSidebarY = options.repoSidebarWidth = options.repoSidebarHeight = null;
+      options.versionSidebarX = options.versionSidebarY = options.versionSidebarWidth = options.versionSidebarHeight = null;
+      saveOptions(options);
+      applyOptions();
+    });
     const pageObserver = new MutationObserver(() => {
       toggleHeader(options.hideHeader);
       toggleDocs(options.hideDocs);
