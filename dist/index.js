@@ -444,7 +444,7 @@
         el.classList.toggle("hidden", !show);
         if (show) ensureSidebarInBounds(el, "repoSidebar");
       }
-      if (handle) handle.classList.toggle("hidden", show);
+      if (handle) handle.classList.toggle("hidden", show || !findPromptInput());
     }
     function toggleVersionSidebar(show) {
       const el = document.getElementById("gpt-version-sidebar");
@@ -453,7 +453,7 @@
         el.classList.toggle("hidden", !show);
         if (show) ensureSidebarInBounds(el, "versionSidebar");
       }
-      if (handle) handle.classList.toggle("hidden", show);
+      if (handle) handle.classList.toggle("hidden", show || !findPromptInput());
     }
     function applyOptions() {
       const root = document.documentElement;
