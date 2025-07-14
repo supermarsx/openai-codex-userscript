@@ -1,11 +1,20 @@
 export function findPromptInput(): HTMLElement | null {
-  return (
+  const el = (
     document.querySelector('#prompt-textarea') ||
     document.querySelector('[data-testid="prompt-textarea"]') ||
     document.querySelector('.ProseMirror#prompt-textarea') ||
     document.querySelector('.ProseMirror[data-testid="prompt-textarea"]') ||
     document.querySelector('.ProseMirror')
   ) as HTMLElement | null;
+
+  if (el) {
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return null;
+    }
+  }
+
+  return el;
 }
 
 export function setPromptText(el: HTMLElement | null, value: string): void {
