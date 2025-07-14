@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.23
+// @version      1.0.24
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -162,7 +162,7 @@
       init_history();
       (function() {
         "use strict";
-        const SCRIPT_VERSION = "1.0.22";
+        const SCRIPT_VERSION = "1.0.24";
         const observers = [];
         let promptInputObserver = null;
         let dropdownObserver = null;
@@ -800,15 +800,16 @@
           });
         }
         function bulkArchive(status) {
-          const buttons = Array.from(document.querySelectorAll("button")).filter((btn) => {
+          const buttons = Array.from(document.querySelectorAll('button,[role="button"]')).filter((btn) => {
             var _a;
-            if (!/archive/i.test(btn.textContent)) return false;
+            const label = (btn.textContent || "") + " " + (btn.getAttribute("aria-label") || "");
+            if (!/archive/i.test(label)) return false;
             const span = btn.querySelector("[data-state]");
             let s = ((_a = span == null ? void 0 : span.dataset.state) == null ? void 0 : _a.toLowerCase()) || "";
             if (!s) {
-              if (/merged/i.test(btn.textContent)) s = "merged";
-              else if (/closed/i.test(btn.textContent)) s = "closed";
-              else if (/open/i.test(btn.textContent)) s = "open";
+              if (/merged/i.test(label)) s = "merged";
+              else if (/closed/i.test(label)) s = "closed";
+              else if (/open/i.test(label)) s = "open";
             }
             return status === "All" || s === status.toLowerCase();
           });
@@ -1154,7 +1155,10 @@
           checkForUpdates();
         }
         function findArchiveButton() {
-          return document.querySelector('[data-testid="archive-task"]') || Array.from(document.querySelectorAll("button")).find((b) => /archive/i.test(b.textContent));
+          return document.querySelector('[data-testid="archive-task"]') || Array.from(document.querySelectorAll('button,[role="button"]')).find((b) => {
+            const label = (b.textContent || "") + " " + (b.getAttribute("aria-label") || "");
+            return /archive/i.test(label);
+          });
         }
         function findSendButton() {
           return document.querySelector('[data-testid*="send" i]') || Array.from(document.querySelectorAll("button")).find((b) => {

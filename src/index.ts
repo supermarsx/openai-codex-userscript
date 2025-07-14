@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.0.22';
+    const SCRIPT_VERSION = '1.0.24';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -679,14 +679,15 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function bulkArchive(status) {
-        const buttons = Array.from(document.querySelectorAll('button')).filter(btn => {
-            if (!/archive/i.test(btn.textContent)) return false;
+        const buttons = Array.from(document.querySelectorAll('button,[role="button"]')).filter(btn => {
+            const label = (btn.textContent || '') + ' ' + (btn.getAttribute('aria-label') || '');
+            if (!/archive/i.test(label)) return false;
             const span = btn.querySelector('[data-state]');
             let s = span?.dataset.state?.toLowerCase() || '';
             if (!s) {
-                if (/merged/i.test(btn.textContent)) s = 'merged';
-                else if (/closed/i.test(btn.textContent)) s = 'closed';
-                else if (/open/i.test(btn.textContent)) s = 'open';
+                if (/merged/i.test(label)) s = 'merged';
+                else if (/closed/i.test(label)) s = 'closed';
+                else if (/open/i.test(label)) s = 'open';
             }
             return status === 'All' || s === status.toLowerCase();
         });
@@ -975,7 +976,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     function findArchiveButton() {
         return (
             document.querySelector('[data-testid="archive-task"]') ||
-            Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent))
+            Array.from(document.querySelectorAll('button,[role="button"]')).find(b => {
+                const label = (b.textContent || '') + ' ' + (b.getAttribute('aria-label') || '');
+                return /archive/i.test(label);
+            })
         );
     }
 
