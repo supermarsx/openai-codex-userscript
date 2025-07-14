@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.21
+// @version      1.0.22
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -127,7 +127,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.21";
+    const SCRIPT_VERSION = "1.0.22";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -764,12 +764,69 @@
         if (status === "All" || it.dataset.status === status) it.remove();
       });
     }
+    function bulkArchive(status) {
+      const buttons = Array.from(document.querySelectorAll("button")).filter((btn) => {
+        var _a;
+        if (!/archive/i.test(btn.textContent)) return false;
+        const span = btn.querySelector("[data-state]");
+        let s = ((_a = span == null ? void 0 : span.dataset.state) == null ? void 0 : _a.toLowerCase()) || "";
+        if (!s) {
+          if (/merged/i.test(btn.textContent)) s = "merged";
+          else if (/closed/i.test(btn.textContent)) s = "closed";
+          else if (/open/i.test(btn.textContent)) s = "open";
+        }
+        return status === "All" || s === status.toLowerCase();
+      });
+      if (buttons.length === 0) return;
+      const overlay = document.createElement("div");
+      overlay.id = "gpt-archive-progress";
+      overlay.style.position = "fixed";
+      overlay.style.inset = "0";
+      overlay.style.zIndex = "1000";
+      overlay.style.background = "rgba(0,0,0,0.5)";
+      overlay.style.display = "flex";
+      overlay.style.alignItems = "center";
+      overlay.style.justifyContent = "center";
+      overlay.innerHTML = `<div style="background: var(--background); color: var(--foreground); padding: 1rem; border-radius: 0.5rem; width: 200px;">
+            <div style="height:6px;background:var(--ring);border-radius:3px;overflow:hidden;">
+                <div id="gpt-progress-bar" style="width:0;height:100%;background:var(--brand-purple);transition:width 0.2s;"></div>
+            </div>
+            <div id="gpt-progress-text" style="margin-top:4px;font-size:12px;text-align:center;">0/${buttons.length}</div>
+        </div>`;
+      document.body.appendChild(overlay);
+      let i = 0;
+      function next() {
+        if (i >= buttons.length) {
+          setTimeout(() => overlay.remove(), 500);
+          return;
+        }
+        buttons[i].click();
+        i++;
+        const pct = Math.round(i / buttons.length * 100);
+        overlay.querySelector("#gpt-progress-bar").style.width = pct + "%";
+        overlay.querySelector("#gpt-progress-text").textContent = `${i}/${buttons.length}`;
+        setTimeout(next, 750);
+      }
+      next();
+    }
     renderRepos();
-    versionSidebar.querySelector("#gpt-clear-open").addEventListener("click", () => clearBranches("Open"));
-    versionSidebar.querySelector("#gpt-clear-merged").addEventListener("click", () => clearBranches("Merged"));
-    versionSidebar.querySelector("#gpt-clear-closed").addEventListener("click", () => clearBranches("Closed"));
+    versionSidebar.querySelector("#gpt-clear-open").addEventListener("click", () => {
+      bulkArchive("open");
+      clearBranches("Open");
+    });
+    versionSidebar.querySelector("#gpt-clear-merged").addEventListener("click", () => {
+      bulkArchive("merged");
+      clearBranches("Merged");
+    });
+    versionSidebar.querySelector("#gpt-clear-closed").addEventListener("click", () => {
+      bulkArchive("closed");
+      clearBranches("Closed");
+    });
     versionSidebar.querySelector("#gpt-clear-all").addEventListener("click", () => {
-      if (window.confirm("Clear all branches?")) clearBranches("All");
+      if (window.confirm("Clear all branches?")) {
+        bulkArchive("All");
+        clearBranches("All");
+      }
     });
     function refreshDropdown() {
       var _a;
