@@ -2,6 +2,36 @@ const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const script = fs.readFileSync('./openai-codex.user.js', 'utf8');
 
+const defaultOptions = {
+  theme: null,
+  font: 'sans-serif',
+  customFont: '',
+  hideHeader: false,
+  hideDocs: false,
+  hideLogoText: false,
+  hideLogoImage: false,
+  hideProfile: false,
+  hideEnvironments: false,
+  autoCheckUpdates: false,
+  showRepoSidebar: true,
+  showVersionSidebar: true,
+  clearClosedBranches: false,
+  clearMergedBranches: false,
+  clearOpenBranches: false,
+  autoArchiveMerged: false,
+  autoArchiveClosed: false,
+  historyLimit: 50,
+  disableHistory: false,
+  repoSidebarX: null,
+  repoSidebarY: null,
+  repoSidebarWidth: null,
+  repoSidebarHeight: null,
+  versionSidebarX: null,
+  versionSidebarY: null,
+  versionSidebarWidth: null,
+  versionSidebarHeight: null,
+};
+
 function createDom(html) {
   const dom = new JSDOM(html, {
     url: 'https://chatgpt.com/codex',
@@ -53,6 +83,15 @@ async function runTest(html, edits = 0) {
   dom1.window.eval(script);
   await new Promise(r => dom1.window.setTimeout(r, 0));
   console.log('Merged auto-archive:', mergedClicked);
+
+  const divTaskHtml = `<div><span data-testid="task-status">Merged</span><div role="menuitem" id="archive-div">Archive task</div></div>`;
+  const divDom = createDom(divTaskHtml);
+  let divClicked = false;
+  divDom.window.document.getElementById('archive-div').addEventListener('click', () => divClicked = true);
+  divDom.window.localStorage.setItem('gpt-script-options', JSON.stringify({ ...defaultOptions, autoArchiveMerged: true }));
+  divDom.window.eval(script);
+  await new Promise(r => divDom.window.setTimeout(r, 0));
+  console.log('Merged auto-archive div:', divClicked);
 
   const taskDom = createDom(`<div><span data-testid="task-status">Open</span><button id="archive-btn">Archive</button></div>`);
   let closedClicked = false;

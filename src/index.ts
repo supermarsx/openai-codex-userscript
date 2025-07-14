@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.0.22';
+    const SCRIPT_VERSION = '1.0.23';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -975,7 +975,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     function findArchiveButton() {
         return (
             document.querySelector('[data-testid="archive-task"]') ||
-            Array.from(document.querySelectorAll('button')).find(b => /archive/i.test(b.textContent))
+            Array.from(document.querySelectorAll('button,div[role="menuitem"]')).find(el => /archive/i.test(el.textContent))
         );
     }
 

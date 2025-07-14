@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.22
+// @version      1.0.23
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -127,7 +127,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.22";
+    const SCRIPT_VERSION = "1.0.23";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -1119,7 +1119,7 @@
       checkForUpdates();
     }
     function findArchiveButton() {
-      return document.querySelector('[data-testid="archive-task"]') || Array.from(document.querySelectorAll("button")).find((b) => /archive/i.test(b.textContent));
+      return document.querySelector('[data-testid="archive-task"]') || Array.from(document.querySelectorAll('button,div[role="menuitem"]')).find((el) => /archive/i.test(el.textContent));
     }
     function findSendButton() {
       return document.querySelector('[data-testid*="send" i]') || Array.from(document.querySelectorAll("button")).find((b) => {
