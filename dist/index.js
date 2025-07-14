@@ -153,7 +153,7 @@
       init_history();
       (function() {
         "use strict";
-        const SCRIPT_VERSION = "1.0.24";
+        const SCRIPT_VERSION = "1.0.25";
         const observers = [];
         let promptInputObserver = null;
         let dropdownObserver = null;
@@ -337,6 +337,10 @@
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-history-preview { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+#gpt-history-preview.show { display: flex; }
+#gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
+#gpt-history-preview button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 #gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
@@ -675,6 +679,30 @@
         <div class="mt-2 text-right"><button id="gpt-history-clear" class="btn btn-secondary btn-small">Clear</button> <button id="gpt-history-close" class="btn btn-secondary btn-small">Close</button></div>
     </div>`;
         document.body.appendChild(historyModal);
+        const historyPreview = document.createElement("div");
+        historyPreview.id = "gpt-history-preview";
+        historyPreview.innerHTML = `
+    <div class="modal-content">
+        <pre id="gpt-preview-text" class="whitespace-pre-wrap"></pre>
+        <div class="mt-2 text-right"><button id="gpt-preview-use" class="btn btn-primary btn-small">Use</button> <button id="gpt-preview-cancel" class="btn btn-secondary btn-small">Cancel</button></div>
+    </div>`;
+        document.body.appendChild(historyPreview);
+        const previewTextEl = historyPreview.querySelector("#gpt-preview-text");
+        const previewUseBtn = historyPreview.querySelector("#gpt-preview-use");
+        const previewCancelBtn = historyPreview.querySelector("#gpt-preview-cancel");
+        function openHistoryPreview(text) {
+          if (previewTextEl) previewTextEl.textContent = text;
+          historyPreview.classList.add("show");
+        }
+        previewCancelBtn == null ? void 0 : previewCancelBtn.addEventListener("click", () => historyPreview.classList.remove("show"));
+        previewUseBtn == null ? void 0 : previewUseBtn.addEventListener("click", () => {
+          const text = (previewTextEl == null ? void 0 : previewTextEl.textContent) || "";
+          setPromptText2(currentPromptDiv || findPromptInput2(), text);
+          historyPreview.classList.remove("show");
+        });
+        historyPreview.addEventListener("click", (e) => {
+          if (e.target === historyPreview) historyPreview.classList.remove("show");
+        });
         const repoSidebar = document.createElement("div");
         repoSidebar.id = "gpt-repo-sidebar";
         repoSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Repositories</h3><button id="gpt-repo-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-repo-list"></ul>';
@@ -972,8 +1000,7 @@
             useBtn.className = "btn relative btn-secondary btn-small";
             useBtn.textContent = "Use";
             useBtn.addEventListener("click", () => {
-              setPromptText2(currentPromptDiv || findPromptInput2(), h);
-              historyModal.classList.remove("show");
+              openHistoryPreview(h);
             });
             li.appendChild(useBtn);
             const restoreBtn = document.createElement("button");
