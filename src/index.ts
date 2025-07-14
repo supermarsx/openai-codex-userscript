@@ -6,7 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '1.0.26';
+    const SCRIPT_VERSION = '1.0.28';
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -194,6 +194,14 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 #gpt-history-modal.show { display: flex; }
 #gpt-history-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-history-search {
+    border: 1px solid var(--ring);
+    background: var(--background);
+    color: var(--foreground);
+    border-radius: 4px;
+    padding: 2px 4px;
+    width: 100%;
+}
 #gpt-history-preview { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
 #gpt-history-preview.show { display: flex; }
 #gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
@@ -222,6 +230,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
     let options = loadOptions();
     let history = loadHistory();
+    let historyQuery = '';
 
 
 
@@ -544,6 +553,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     historyModal.innerHTML = `
     <div class="modal-content">
         <h2 class="mb-2 text-lg">Prompt History</h2>
+        <input type="text" id="gpt-history-search" class="w-full mb-2" placeholder="Search...">
         <div id="gpt-history-list"></div>
         <div class="mt-2 text-right"><button id="gpt-history-clear" class="btn btn-secondary btn-small">Clear</button> <button id="gpt-history-close" class="btn btn-secondary btn-small">Close</button></div>
     </div>`;
@@ -912,11 +922,20 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
         modal.classList.add('show');
     }
 
+    function filterHistory(list, query) {
+        const q = (query || '').toLowerCase();
+        return list.reduce((acc, h, i) => {
+            if (!q || h.toLowerCase().includes(q)) acc.push([h, i]);
+            return acc;
+        }, []);
+    }
+
     function renderHistory() {
         const wrap = historyModal.querySelector('#gpt-history-list');
         wrap.innerHTML = '';
         const ul = document.createElement('ul');
-        history.forEach((h, i) => {
+        const items = filterHistory(history, historyQuery);
+        items.forEach(([h, i]) => {
             const li = document.createElement('li');
             const span = document.createElement('span');
             const first = h.split(/\r?\n/)[0];
@@ -955,6 +974,8 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     }
 
     function openHistory() {
+        const input = historyModal.querySelector('#gpt-history-search');
+        if (input) input.value = historyQuery;
         renderHistory();
         historyModal.classList.add('show');
     }
@@ -980,6 +1001,11 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
     historyModal.querySelector('#gpt-history-close').addEventListener('click', () => historyModal.classList.remove('show'));
     historyModal.addEventListener('click', (e) => { if (e.target === historyModal) historyModal.classList.remove('show'); });
     historyModal.querySelector('#gpt-history-clear').addEventListener('click', () => { history = []; saveHistory(history); renderHistory(); });
+    const historySearchInput = historyModal.querySelector('#gpt-history-search');
+    historySearchInput?.addEventListener('input', () => {
+        historyQuery = historySearchInput.value;
+        renderHistory();
+    });
     modal.querySelector('#gpt-setting-theme').addEventListener('change', (e) => { options.theme = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-font').addEventListener('change', (e) => { options.font = e.target.value; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-custom-font').addEventListener('input', (e) => { options.customFont = e.target.value; saveOptions(options); applyOptions(); });
