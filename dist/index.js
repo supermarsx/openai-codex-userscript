@@ -153,7 +153,7 @@
       init_history();
       (function() {
         "use strict";
-        const SCRIPT_VERSION = "1.0.25";
+        const SCRIPT_VERSION = "1.0.26";
         const observers = [];
         let promptInputObserver = null;
         let dropdownObserver = null;
@@ -345,11 +345,7 @@
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
 #gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
-#gpt-repo-handle, #gpt-version-handle { position: fixed; top: 50%; z-index: 998; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); width: 32px; height: 32px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transform: translateY(-50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 #gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
-#gpt-repo-handle { left: 8px; }
-#gpt-version-handle { right: 8px; }
-#gpt-repo-handle.hidden, #gpt-version-handle.hidden { display: none; }
 `;
         document.head.appendChild(settingsStyle);
         const fallbackStyle = document.createElement("style");
@@ -478,21 +474,17 @@
         }
         function toggleRepoSidebar(show) {
           const el = document.getElementById("gpt-repo-sidebar");
-          const handle = document.getElementById("gpt-repo-handle");
           if (el) {
             el.classList.toggle("hidden", !show);
             if (show) ensureSidebarInBounds(el, "repoSidebar");
           }
-          if (handle) handle.classList.toggle("hidden", show || !findPromptInput2());
         }
         function toggleVersionSidebar(show) {
           const el = document.getElementById("gpt-version-sidebar");
-          const handle = document.getElementById("gpt-version-handle");
           if (el) {
             el.classList.toggle("hidden", !show);
             if (show) ensureSidebarInBounds(el, "versionSidebar");
           }
-          if (handle) handle.classList.toggle("hidden", show || !findPromptInput2());
         }
         function applyOptions() {
           const root = document.documentElement;
@@ -721,24 +713,6 @@
         versionSidebar.querySelector("#gpt-version-hide").addEventListener("click", () => {
           toggleVersionSidebar(false);
           options.showVersionSidebar = false;
-          saveOptions(options);
-        });
-        const repoHandle = document.createElement("div");
-        repoHandle.id = "gpt-repo-handle";
-        repoHandle.textContent = "\u{1F4C1}";
-        document.body.appendChild(repoHandle);
-        repoHandle.addEventListener("click", () => {
-          toggleRepoSidebar(true);
-          options.showRepoSidebar = true;
-          saveOptions(options);
-        });
-        const versionHandle = document.createElement("div");
-        versionHandle.id = "gpt-version-handle";
-        versionHandle.textContent = "\u{1F516}";
-        document.body.appendChild(versionHandle);
-        versionHandle.addEventListener("click", () => {
-          toggleVersionSidebar(true);
-          options.showVersionSidebar = true;
           saveOptions(options);
         });
         let repos = [];
