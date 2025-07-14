@@ -343,7 +343,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
             el.classList.toggle('hidden', !show);
             if (show) ensureSidebarInBounds(el, 'repoSidebar');
         }
-        if (handle) handle.classList.toggle('hidden', show);
+        if (handle) handle.classList.toggle('hidden', show || !findPromptInput());
     }
 
     function toggleVersionSidebar(show) {
@@ -353,7 +353,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
             el.classList.toggle('hidden', !show);
             if (show) ensureSidebarInBounds(el, 'versionSidebar');
         }
-        if (handle) handle.classList.toggle('hidden', show);
+        if (handle) handle.classList.toggle('hidden', show || !findPromptInput());
     }
 
     function applyOptions() {
