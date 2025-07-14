@@ -89,4 +89,22 @@ async function runTest(html, edits = 0) {
   const docsLink = Array.from(settingsDom.window.document.querySelectorAll('a')).find(a => a.textContent.includes('Docs'));
   const docsHidden = docsLink && docsLink.style.display === 'none';
   console.log('Docs hidden:', docsHidden);
+
+  const clearHtml = `
+    <button class="arch" id="c1"><span data-state="closed"></span>Archive</button>
+    <button class="arch" id="o1"><span data-state="open"></span>Archive</button>
+    <button class="arch" id="m1">Merged</button>`;
+  const clearDom = createDom(clearHtml);
+  let closedCount = 0;
+  let mergedCount = 0;
+  clearDom.window.document.getElementById('c1').addEventListener('click', () => closedCount++);
+  clearDom.window.document.getElementById('m1').addEventListener('click', () => mergedCount++);
+  clearDom.window.eval(script);
+  await new Promise(r => clearDom.window.setTimeout(r, 0));
+  clearDom.window.document.getElementById('gpt-clear-closed').dispatchEvent(new clearDom.window.Event('click', { bubbles: true }));
+  await new Promise(r => clearDom.window.setTimeout(r, 800));
+  console.log('Bulk closed clicks:', closedCount);
+  clearDom.window.document.getElementById('gpt-clear-merged').dispatchEvent(new clearDom.window.Event('click', { bubbles: true }));
+  await new Promise(r => clearDom.window.setTimeout(r, 800));
+  console.log('Bulk merged clicks:', mergedCount);
 })();
