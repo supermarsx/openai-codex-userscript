@@ -177,4 +177,32 @@ function parseRepoNames(list) {
   clearDom.window.document.getElementById('gpt-clear-merged').dispatchEvent(new clearDom.window.Event('click', { bubbles: true }));
   await new Promise(r => clearDom.window.setTimeout(r, 800));
   console.log('Bulk merged clicks:', mergedCount);
+
+  // Import suggestions test
+  const importDom = createDom(textareaHtml);
+  const data = ["dup", "", "dup", "unique", " "];
+  const json = JSON.stringify(data);
+  const blob = new importDom.window.Blob([json], { type: 'application/json' });
+  class FakeReader {
+    readAsText() { this.result = json; this.onload(); }
+    onload() {}
+  }
+  importDom.window.FileReader = FakeReader;
+  const origClick = importDom.window.HTMLInputElement.prototype.click;
+  importDom.window.HTMLInputElement.prototype.click = function() {
+    if (this.type === 'file') {
+      Object.defineProperty(this, 'files', { value: [blob], configurable: true });
+      this.dispatchEvent(new importDom.window.Event('change', { bubbles: true }));
+    } else { origClick.call(this); }
+  };
+  importDom.window.eval(script);
+  await new Promise(r => importDom.window.setTimeout(r, 0));
+  importDom.window.document.getElementById('gpt-settings-btn').dispatchEvent(new importDom.window.Event('click', { bubbles: true }));
+  await new Promise(r => importDom.window.setTimeout(r, 0));
+  const importBtn = Array.from(importDom.window.document.querySelectorAll('#gpt-settings-suggestions button')).find(b => b.textContent === 'Import');
+  importBtn.dispatchEvent(new importDom.window.Event('click', { bubbles: true }));
+  await new Promise(r => importDom.window.setTimeout(r, 0));
+  importDom.window.HTMLInputElement.prototype.click = origClick;
+  const stored = JSON.parse(importDom.window.localStorage.getItem('gpt-prompt-suggestions'));
+  console.log('Imported suggestions:', stored);
 })();
