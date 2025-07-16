@@ -25,11 +25,20 @@ where you can manage your prompt suggestions and toggle various UI options:
 * Toggle the repository sidebar that lists detected repositories.
 * Toggle the version sidebar that displays branches for the selected repository.
 * Enable auto-archiving when a task is merged or closed.
+* Import or export your prompt suggestions as a JSON file.
 
 The chosen settings are stored in `localStorage` so they apply whenever the
 script runs. By default both repository and version sidebars are visible while
 auto-archiving for merged and closed tasks is disabled. These behaviours can be
 toggled from the settings modal.
+
+## Prompt history
+
+Click the book icon in the action bar to open the history modal. It lists your
+previous prompts up to the limit defined by `historyLimit` (50 by default). A
+search box filters entries while buttons let you preview, restore or delete
+individual prompts. Use the **Clear** button to remove all stored history.
+Entries are kept in the `gpt-prompt-history` key of `localStorage`.
 
 ## Theme styling
 
