@@ -79,29 +79,32 @@ function parseRepoNames(list) {
   return repos;
 }
 
+
 (async () => {
-  // Test parseRepoNames with environment select
+  // Parse repo names from various DOM sources
   {
-    const dom = createDom('<select data-testid="environment-select"><option>foo/bar</option><option>foo/bar</option><option>bar/baz</option></select>');
+    const env = '<select data-testid="environment-select">' +
+                '<option>foo/bar</option><option>foo/bar</option>' +
+                '<option>bar/baz</option></select>';
+    const dom = createDom(env);
     global.document = dom.window.document;
-    const names = parseRepoNames();
-    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+    assert.deepStrictEqual(parseRepoNames(), ['foo/bar', 'bar/baz']);
   }
 
-  // Test parseRepoNames with repository sidebar
   {
-    const dom = createDom('<ul data-testid="repository-list"><li>foo/bar</li><li>foo/bar</li><li>bar/baz</li></ul>');
+    const list = '<ul data-testid="repository-list">' +
+                 '<li>foo/bar</li><li>foo/bar</li><li>bar/baz</li>' +
+                 '</ul>';
+    const dom = createDom(list);
     global.document = dom.window.document;
-    const names = parseRepoNames();
-    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+    assert.deepStrictEqual(parseRepoNames(), ['foo/bar', 'bar/baz']);
   }
 
-  // Test parseRepoNames with plain text fallback
   {
-    const dom = createDom('<div>foo/bar other text foo/bar again bar/baz</div>');
+    const text = '<div>foo/bar other text foo/bar again bar/baz</div>';
+    const dom = createDom(text);
     global.document = dom.window.document;
-    const names = parseRepoNames();
-    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+    assert.deepStrictEqual(parseRepoNames(), ['foo/bar', 'bar/baz']);
   }
 
   delete global.document;
