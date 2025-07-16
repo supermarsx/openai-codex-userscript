@@ -872,7 +872,10 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
                     try {
                         const data = JSON.parse(String(reader.result));
                         if (Array.isArray(data) && data.every(d => typeof d === 'string')) {
-                            suggestions = data.map(d => String(d).trim());
+                            const list = Array.from(new Set(
+                                data.map(d => String(d).trim()).filter(Boolean)
+                            ));
+                            suggestions = list;
                             saveSuggestions(suggestions);
                             renderSuggestions();
                             refreshDropdown();
