@@ -107,4 +107,38 @@ async function runTest(html, edits = 0) {
   clearDom.window.document.getElementById('gpt-clear-merged').dispatchEvent(new clearDom.window.Event('click', { bubbles: true }));
   await new Promise(r => clearDom.window.setTimeout(r, 800));
   console.log('Bulk merged clicks:', mergedCount);
+
+  // Resize sidebar test
+  const resizeDom = createDom('');
+  class RO {
+    constructor(cb) { this.cb = cb; RO.instances.push(this); }
+    observe() {}
+    disconnect() {}
+  }
+  RO.instances = [];
+  resizeDom.window.ResizeObserver = RO;
+  resizeDom.window.eval(script);
+  await new Promise(r => resizeDom.window.setTimeout(r, 0));
+  const repoEl = resizeDom.window.document.getElementById('gpt-repo-sidebar');
+  repoEl.style.width = '250px';
+  repoEl.style.height = '260px';
+  repoEl.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    width: 250,
+    height: 260,
+    right: 250,
+    bottom: 260
+  });
+  RO.instances.forEach(i => i.cb());
+  repoEl.dispatchEvent(new resizeDom.window.Event('mouseup', { bubbles: true }));
+  const saved = JSON.parse(resizeDom.window.localStorage.getItem('gpt-script-options'));
+  console.log('Resize saved:', saved.repoSidebarWidth === 250 && saved.repoSidebarHeight === 260);
+  const reloadDom = createDom('');
+  reloadDom.window.localStorage.setItem('gpt-script-options', JSON.stringify(saved));
+  reloadDom.window.ResizeObserver = RO;
+  reloadDom.window.eval(script);
+  await new Promise(r => reloadDom.window.setTimeout(r, 0));
+  const repoEl2 = reloadDom.window.document.getElementById('gpt-repo-sidebar');
+  console.log('Resize applied:', repoEl2.style.width === '250px' && repoEl2.style.height === '260px');
 })();

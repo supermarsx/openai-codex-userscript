@@ -118,7 +118,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.29";
+    const SCRIPT_VERSION = "1.0.30";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -377,10 +377,17 @@
       const header = el.querySelector("div");
       let dragging = false;
       let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+      let resizing = false;
       function savePos() {
         const rect = el.getBoundingClientRect();
         options[prefix + "X"] = rect.left;
         options[prefix + "Y"] = rect.top;
+        options[prefix + "Width"] = rect.width;
+        options[prefix + "Height"] = rect.height;
+        saveOptions(options);
+      }
+      function saveSize() {
+        const rect = el.getBoundingClientRect();
         options[prefix + "Width"] = rect.width;
         options[prefix + "Height"] = rect.height;
         saveOptions(options);
@@ -413,6 +420,22 @@
         savePos();
       }
       el.addEventListener("mouseup", () => savePos());
+      if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(() => {
+          if (resizing) return;
+          resizing = true;
+          const handler = () => {
+            saveSize();
+            el.removeEventListener("mouseup", handler);
+            el.removeEventListener("mouseleave", handler);
+            resizing = false;
+          };
+          el.addEventListener("mouseup", handler);
+          el.addEventListener("mouseleave", handler);
+        });
+        ro.observe(el);
+        observers.push(ro);
+      }
     }
     function ensureSidebarInBounds(el, prefix) {
       const rect = el.getBoundingClientRect();
