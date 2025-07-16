@@ -205,4 +205,27 @@ function parseRepoNames(list) {
   importDom.window.HTMLInputElement.prototype.click = origClick;
   const stored = JSON.parse(importDom.window.localStorage.getItem('gpt-prompt-suggestions'));
   console.log('Imported suggestions:', stored);
+
+  // Sidebar resize test
+  const resizeDom = createDom('');
+  resizeDom.window.eval(script);
+  await new Promise(r => resizeDom.window.setTimeout(r, 0));
+  const sidebar = resizeDom.window.document.getElementById('gpt-repo-sidebar');
+  sidebar.style.width = '220px';
+  sidebar.style.height = '300px';
+  sidebar.getBoundingClientRect = () => ({ left:0, top:0, right:0, bottom:0, width:220, height:300 });
+  sidebar.dispatchEvent(new resizeDom.window.Event('mouseup', { bubbles: true }));
+  await new Promise(r => resizeDom.window.setTimeout(r, 0));
+  const optsStr = resizeDom.window.localStorage.getItem('gpt-script-options');
+  const opts = JSON.parse(optsStr);
+  assert.strictEqual(opts.repoSidebarWidth, 220);
+  assert.strictEqual(opts.repoSidebarHeight, 300);
+
+  const applyDom = createDom('');
+  applyDom.window.localStorage.setItem('gpt-script-options', optsStr);
+  applyDom.window.eval(script);
+  await new Promise(r => applyDom.window.setTimeout(r, 0));
+  const applied = applyDom.window.document.getElementById('gpt-repo-sidebar');
+  assert.strictEqual(applied.style.width, '220px');
+  assert.strictEqual(applied.style.height, '300px');
 })();

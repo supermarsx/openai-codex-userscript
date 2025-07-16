@@ -118,7 +118,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.30";
+    const SCRIPT_VERSION = "1.0.31";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -413,6 +413,19 @@
         savePos();
       }
       el.addEventListener("mouseup", () => savePos());
+      if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(() => {
+          function onResizeEnd() {
+            savePos();
+            el.removeEventListener("mouseup", onResizeEnd);
+            el.removeEventListener("mouseleave", onResizeEnd);
+          }
+          el.addEventListener("mouseup", onResizeEnd);
+          el.addEventListener("mouseleave", onResizeEnd);
+        });
+        ro.observe(el);
+        observers.push(ro);
+      }
     }
     function ensureSidebarInBounds(el, prefix) {
       const rect = el.getBoundingClientRect();

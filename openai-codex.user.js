@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.30
+// @version      1.0.31
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -127,7 +127,7 @@
   // src/index.ts
   (function() {
     "use strict";
-    const SCRIPT_VERSION = "1.0.30";
+    const SCRIPT_VERSION = "1.0.31";
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
@@ -422,6 +422,19 @@
         savePos();
       }
       el.addEventListener("mouseup", () => savePos());
+      if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(() => {
+          function onResizeEnd() {
+            savePos();
+            el.removeEventListener("mouseup", onResizeEnd);
+            el.removeEventListener("mouseleave", onResizeEnd);
+          }
+          el.addEventListener("mouseup", onResizeEnd);
+          el.addEventListener("mouseleave", onResizeEnd);
+        });
+        ro.observe(el);
+        observers.push(ro);
+      }
     }
     function ensureSidebarInBounds(el, prefix) {
       const rect = el.getBoundingClientRect();
