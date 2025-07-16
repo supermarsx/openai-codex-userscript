@@ -189,11 +189,13 @@ function parseRepoNames(list) {
   }
   importDom.window.FileReader = FakeReader;
   const origClick = importDom.window.HTMLInputElement.prototype.click;
-  importDom.window.HTMLInputElement.prototype.click = function() {
+  importDom.window.HTMLInputElement.prototype.click = function () {
     if (this.type === 'file') {
       Object.defineProperty(this, 'files', { value: [blob], configurable: true });
       this.dispatchEvent(new importDom.window.Event('change', { bubbles: true }));
-    } else { origClick.call(this); }
+    } else {
+      origClick.call(this);
+    }
   };
   importDom.window.eval(script);
   await new Promise(r => importDom.window.setTimeout(r, 0));
@@ -204,7 +206,7 @@ function parseRepoNames(list) {
   await new Promise(r => importDom.window.setTimeout(r, 0));
   importDom.window.HTMLInputElement.prototype.click = origClick;
   const stored = JSON.parse(importDom.window.localStorage.getItem('gpt-prompt-suggestions'));
-  console.log('Imported suggestions:', stored);
+  assert.deepStrictEqual(stored, ['dup', 'unique']);
 
   // Sidebar resize test
   const resizeDom = createDom('');
