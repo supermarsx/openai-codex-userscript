@@ -1,5 +1,6 @@
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
+const assert = require('assert');
 const script = fs.readFileSync('./openai-codex.user.js', 'utf8');
 
 function createDom(html) {
@@ -35,7 +36,76 @@ async function runTest(html, edits = 0) {
   return dom.window;
 }
 
+let repos = [];
+function parseRepoNames(list) {
+  const set = new Set();
+
+  if (Array.isArray(list)) {
+    list.forEach(name => {
+      name = name.trim();
+      if (name) set.add(name);
+    });
+  } else if (typeof list === 'string') {
+    list.split(/[\,\n]+/).forEach(name => {
+      name = name.trim();
+      if (name) set.add(name);
+    });
+  }
+
+  const env = document.querySelector('[data-testid="environment-select"], [data-testid="environment-dropdown"], select[id*=environment], select[name*=environment]');
+  if (env) {
+    env.querySelectorAll('option').forEach(opt => {
+      const t = opt.textContent?.trim();
+      if (t) set.add(t);
+    });
+  }
+
+  const sidebar = document.querySelector('[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]');
+  if (sidebar) {
+    sidebar.querySelectorAll('a, li').forEach(el => {
+      const t = el.textContent?.trim();
+      if (t) set.add(t);
+    });
+  }
+
+  if (set.size === 0) {
+    const text = document.body.textContent || '';
+    const regex = /[\w.-]+\/[\w.-]+/g;
+    let m;
+    while ((m = regex.exec(text))) set.add(m[0]);
+  }
+
+  repos = Array.from(set);
+  return repos;
+}
+
 (async () => {
+  // Test parseRepoNames with environment select
+  {
+    const dom = createDom('<select data-testid="environment-select"><option>foo/bar</option><option>foo/bar</option><option>bar/baz</option></select>');
+    global.document = dom.window.document;
+    const names = parseRepoNames();
+    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+  }
+
+  // Test parseRepoNames with repository sidebar
+  {
+    const dom = createDom('<ul data-testid="repository-list"><li>foo/bar</li><li>foo/bar</li><li>bar/baz</li></ul>');
+    global.document = dom.window.document;
+    const names = parseRepoNames();
+    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+  }
+
+  // Test parseRepoNames with plain text fallback
+  {
+    const dom = createDom('<div>foo/bar other text foo/bar again bar/baz</div>');
+    global.document = dom.window.document;
+    const names = parseRepoNames();
+    assert.deepStrictEqual(names, ['foo/bar', 'bar/baz']);
+  }
+
+  delete global.document;
+
   const textareaHtml = `<div class="flex-col items-center"><textarea id="prompt-textarea"></textarea></div>`;
   const w1 = await runTest(textareaHtml, 3);
   console.log('Textarea wrappers:', w1.document.querySelectorAll('.grid.w-full.gap-1\\.5').length);
