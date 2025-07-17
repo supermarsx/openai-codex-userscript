@@ -3,10 +3,11 @@ import { loadOptions, saveOptions, DEFAULT_OPTIONS } from "./helpers/options";
 import { loadSuggestions, saveSuggestions, DEFAULT_SUGGESTIONS } from "./helpers/suggestions";
 import { loadHistory, saveHistory, addToHistory } from "./helpers/history";
 import { findPromptInput, setPromptText } from "./helpers/dom";
+import { VERSION } from "./version";
 (function () {
 
     'use strict';
-    const SCRIPT_VERSION = '__VERSION__';
+    const SCRIPT_VERSION = VERSION;
     const observers = [];
     let promptInputObserver = null;
     let dropdownObserver = null;
