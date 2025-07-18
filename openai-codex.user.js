@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.33
+// @version      1.0.35
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -82,6 +82,7 @@
         hideLogoImage: false,
         hideProfile: false,
         hideEnvironments: false,
+        threeColumnMode: false,
         autoCheckUpdates: false,
         showRepoSidebar: true,
         showVersionSidebar: true,
@@ -158,7 +159,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.33";
+      VERSION = "1.0.35";
     }
   });
 
@@ -387,6 +388,49 @@
 }
 `;
         document.head.appendChild(fallbackStyle);
+        const columnStyle = document.createElement("style");
+        columnStyle.id = "gpt-three-column-style";
+        columnStyle.textContent = `
+div.h-full > div > div.justify-center:nth-child(2) {
+  display: block !important;
+  width: 100vw !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 2rem 3vw !important;
+  box-sizing: border-box !important;
+
+  column-count: 3;
+  column-gap: 2.5rem;
+  height: auto !important;
+}
+
+div.justify-center:nth-child(2) > * {
+  width: auto !important;
+  display: block !important;
+  left: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+div.mx-auto {
+    width: 100vw;
+}
+
+div.h-full > div > div.z-50 {
+    width: 33vw;
+    align-items: center !important;
+    margin: auto;
+}
+
+div.justify-center:nth-child(2) {
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+body, html {
+  overflow: visible !important;
+  width: 100vw !important;
+}`;
         let suggestions = loadSuggestions() || DEFAULT_SUGGESTIONS.slice();
         let options = loadOptions();
         let history = loadHistory();
@@ -560,6 +604,11 @@
           toggleEnvironments(options.hideEnvironments);
           toggleRepoSidebar(options.showRepoSidebar);
           toggleVersionSidebar(options.showVersionSidebar);
+          if (options.threeColumnMode) {
+            if (!document.head.contains(columnStyle)) document.head.appendChild(columnStyle);
+          } else {
+            if (columnStyle.parentNode) columnStyle.parentNode.removeChild(columnStyle);
+          }
           const repoEl = document.getElementById("gpt-repo-sidebar");
           if (repoEl) {
             if (options.repoSidebarX !== null) repoEl.style.left = options.repoSidebarX + "px";
@@ -675,7 +724,8 @@
             <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
             <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
             <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
-            <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label>
+            <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
+            <label><input type="checkbox" id="gpt-setting-three-column"> 3 column layout</label>
         </div>
         <div class="settings-group">
             <h3>Sidebars</h3>
@@ -1051,6 +1101,7 @@
           modal.querySelector("#gpt-setting-logo-image").checked = options.hideLogoImage;
           modal.querySelector("#gpt-setting-profile").checked = options.hideProfile;
           modal.querySelector("#gpt-setting-environments").checked = options.hideEnvironments;
+          modal.querySelector("#gpt-setting-three-column").checked = options.threeColumnMode;
           modal.querySelector("#gpt-setting-auto-updates").checked = options.autoCheckUpdates;
           modal.querySelector("#gpt-setting-disable-history").checked = options.disableHistory;
           modal.querySelector("#gpt-setting-history-limit").value = String(options.historyLimit);
@@ -1190,6 +1241,11 @@
         });
         modal.querySelector("#gpt-setting-environments").addEventListener("change", (e) => {
           options.hideEnvironments = e.target.checked;
+          saveOptions(options);
+          applyOptions();
+        });
+        modal.querySelector("#gpt-setting-three-column").addEventListener("change", (e) => {
+          options.threeColumnMode = e.target.checked;
           saveOptions(options);
           applyOptions();
         });
