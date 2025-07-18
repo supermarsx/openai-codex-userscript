@@ -10,6 +10,7 @@ export interface Options {
   hideLogoImage: boolean;
   hideProfile: boolean;
   hideEnvironments: boolean;
+  threeColumnMode: boolean;
   autoCheckUpdates: boolean;
   showRepoSidebar: boolean;
   showVersionSidebar: boolean;
@@ -40,6 +41,7 @@ export const DEFAULT_OPTIONS: Options = {
   hideLogoImage: false,
   hideProfile: false,
   hideEnvironments: false,
+  threeColumnMode: false,
   autoCheckUpdates: false,
   showRepoSidebar: true,
   showVersionSidebar: true,
