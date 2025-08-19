@@ -197,7 +197,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.36";
+      VERSION = "1.0.37";
     }
   });
 
@@ -479,9 +479,18 @@ body, html {
           return elements.find((el) => el.textContent && el.textContent.includes(text)) || null;
         }
         function toggleHeader(hide) {
-          var _a;
-          const node = document.querySelector("h1.mb-4.pt-4.text-2xl");
-          if (node && ((_a = node.textContent) == null ? void 0 : _a.includes("What are we coding next?"))) {
+          const targetTexts = ["What are we coding next?", "What should we code next?"];
+          let node = document.querySelector("h1.mb-4.pt-4.text-2xl");
+          if (!node || !targetTexts.some((t) => {
+            var _a;
+            return (_a = node.textContent) == null ? void 0 : _a.includes(t);
+          })) {
+            node = findByText("What should we code next?");
+          }
+          if (node && targetTexts.some((t) => {
+            var _a;
+            return (_a = node.textContent) == null ? void 0 : _a.includes(t);
+          })) {
             node.style.display = hide ? "none" : "";
           }
         }

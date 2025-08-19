@@ -287,8 +287,12 @@ body, html {
     }
 
     function toggleHeader(hide) {
-        const node = document.querySelector('h1.mb-4.pt-4.text-2xl');
-        if (node && node.textContent?.includes('What are we coding next?')) {
+        const targetTexts = ['What are we coding next?', 'What should we code next?'];
+        let node = document.querySelector('h1.mb-4.pt-4.text-2xl');
+        if (!node || !targetTexts.some(t => node.textContent?.includes(t))) {
+            node = findByText('What should we code next?');
+        }
+        if (node && targetTexts.some(t => node.textContent?.includes(t))) {
             node.style.display = hide ? 'none' : '';
         }
     }

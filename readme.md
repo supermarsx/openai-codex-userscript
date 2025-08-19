@@ -19,7 +19,7 @@ A floating gear icon is added to the side of the page. Clicking it opens a modal
 where you can manage your prompt suggestions and toggle various UI options:
 
 * Switch between Light, Dark and OLED themes.
-* Hide the “What are we coding next?” header.
+* Hide the “What should we code next?” header.
 * Hide the “Docs” navigation link.
 * Hide the "Environments" button.
 * Toggle the repository sidebar that lists detected repositories.
