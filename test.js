@@ -109,6 +109,29 @@ function parseRepoNames(list) {
 
   delete global.document;
 
+  // Options validation tests
+  {
+    const html = `<h1 id="hdr">Title</h1>`;
+    const dom = createDom(html);
+    dom.window.localStorage.setItem('gpt-script-options', JSON.stringify({ hideHeader: 'yes', theme: 123 }));
+    dom.window.eval(script);
+    await new Promise(r => dom.window.setTimeout(r, 0));
+    const headerHidden = dom.window.document.getElementById('hdr').style.display === 'none';
+    assert.strictEqual(headerHidden, false);
+    const rootClasses = dom.window.document.documentElement.classList;
+    assert.ok(!rootClasses.contains('userscript-force-dark') && !rootClasses.contains('dark'));
+  }
+
+  {
+    const html = `<h1 id="hdr">Title</h1><a id="docs" href="#">Docs</a>`;
+    const dom = createDom(html);
+    dom.window.localStorage.setItem('gpt-script-options', JSON.stringify({ theme: 'dark' }));
+    dom.window.eval(script);
+    await new Promise(r => dom.window.setTimeout(r, 0));
+    const docsHidden = dom.window.document.getElementById('docs').style.display === 'none';
+    assert.strictEqual(docsHidden, false);
+  }
+
   const textareaHtml = `<div class="flex-col items-center"><textarea id="prompt-textarea"></textarea></div>`;
   const w1 = await runTest(textareaHtml, 3);
   console.log('Textarea wrappers:', w1.document.querySelectorAll('.grid.w-full.gap-1\\.5').length);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.35
+// @version      1.0.36
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -58,17 +58,23 @@
 
   // src/helpers/options.ts
   function loadOptions() {
-    const opts = loadJSON(STORAGE_KEY, DEFAULT_OPTIONS);
-    const anyOpts = opts;
-    if ("dark" in anyOpts && !("theme" in anyOpts)) {
-      anyOpts.theme = anyOpts.dark ? "dark" : "light";
+    const raw = loadJSON(STORAGE_KEY, {});
+    if ("dark" in raw && typeof raw.dark === "boolean" && !("theme" in raw)) {
+      raw.theme = raw.dark ? "dark" : "light";
     }
-    return __spreadValues(__spreadValues({}, DEFAULT_OPTIONS), opts);
+    const cleaned = {};
+    for (const key in validators) {
+      const val = raw[key];
+      if (validators[key](val)) {
+        cleaned[key] = val;
+      }
+    }
+    return __spreadValues(__spreadValues({}, DEFAULT_OPTIONS), cleaned);
   }
   function saveOptions(opts) {
     saveJSON(STORAGE_KEY, opts);
   }
-  var DEFAULT_OPTIONS, STORAGE_KEY;
+  var DEFAULT_OPTIONS, STORAGE_KEY, FONT_VALUES, isBool, isNum, isNumOrNull, validators;
   var init_options = __esm({
     "src/helpers/options.ts"() {
       init_storage();
@@ -103,6 +109,40 @@
         versionSidebarHeight: null
       };
       STORAGE_KEY = "gpt-script-options";
+      FONT_VALUES = ["serif", "sans-serif", "monospace", "custom"];
+      isBool = (v) => typeof v === "boolean";
+      isNum = (v) => typeof v === "number" && !isNaN(v);
+      isNumOrNull = (v) => v === null || isNum(v);
+      validators = {
+        theme: (v) => v === null || typeof v === "string",
+        font: (v) => FONT_VALUES.includes(v),
+        customFont: (v) => typeof v === "string",
+        hideHeader: isBool,
+        hideDocs: isBool,
+        hideLogoText: isBool,
+        hideLogoImage: isBool,
+        hideProfile: isBool,
+        hideEnvironments: isBool,
+        threeColumnMode: isBool,
+        autoCheckUpdates: isBool,
+        showRepoSidebar: isBool,
+        showVersionSidebar: isBool,
+        clearClosedBranches: isBool,
+        clearMergedBranches: isBool,
+        clearOpenBranches: isBool,
+        autoArchiveMerged: isBool,
+        autoArchiveClosed: isBool,
+        historyLimit: isNum,
+        disableHistory: isBool,
+        repoSidebarX: isNumOrNull,
+        repoSidebarY: isNumOrNull,
+        repoSidebarWidth: isNumOrNull,
+        repoSidebarHeight: isNumOrNull,
+        versionSidebarX: isNumOrNull,
+        versionSidebarY: isNumOrNull,
+        versionSidebarWidth: isNumOrNull,
+        versionSidebarHeight: isNumOrNull
+      };
     }
   });
 
@@ -159,7 +199,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.35";
+      VERSION = "1.0.36";
     }
   });
 

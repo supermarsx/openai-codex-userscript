@@ -64,13 +64,55 @@ export const DEFAULT_OPTIONS: Options = {
 
 const STORAGE_KEY = 'gpt-script-options';
 
+const FONT_VALUES = ['serif', 'sans-serif', 'monospace', 'custom'] as const;
+const isBool = (v: any): v is boolean => typeof v === 'boolean';
+const isNum = (v: any): v is number => typeof v === 'number' && !isNaN(v);
+const isNumOrNull = (v: any): v is number | null => v === null || isNum(v);
+
+const validators: { [K in keyof Options]: (val: any) => boolean } = {
+  theme: (v) => v === null || typeof v === 'string',
+  font: (v) => FONT_VALUES.includes(v),
+  customFont: (v) => typeof v === 'string',
+  hideHeader: isBool,
+  hideDocs: isBool,
+  hideLogoText: isBool,
+  hideLogoImage: isBool,
+  hideProfile: isBool,
+  hideEnvironments: isBool,
+  threeColumnMode: isBool,
+  autoCheckUpdates: isBool,
+  showRepoSidebar: isBool,
+  showVersionSidebar: isBool,
+  clearClosedBranches: isBool,
+  clearMergedBranches: isBool,
+  clearOpenBranches: isBool,
+  autoArchiveMerged: isBool,
+  autoArchiveClosed: isBool,
+  historyLimit: isNum,
+  disableHistory: isBool,
+  repoSidebarX: isNumOrNull,
+  repoSidebarY: isNumOrNull,
+  repoSidebarWidth: isNumOrNull,
+  repoSidebarHeight: isNumOrNull,
+  versionSidebarX: isNumOrNull,
+  versionSidebarY: isNumOrNull,
+  versionSidebarWidth: isNumOrNull,
+  versionSidebarHeight: isNumOrNull,
+};
+
 export function loadOptions(): Options {
-  const opts = loadJSON<Options>(STORAGE_KEY, DEFAULT_OPTIONS);
-  const anyOpts: any = opts;
-  if ('dark' in anyOpts && !('theme' in anyOpts)) {
-    anyOpts.theme = anyOpts.dark ? 'dark' : 'light';
+  const raw = loadJSON<Record<string, any>>(STORAGE_KEY, {});
+  if ('dark' in raw && typeof (raw as any).dark === 'boolean' && !('theme' in raw)) {
+    (raw as any).theme = (raw as any).dark ? 'dark' : 'light';
   }
-  return { ...DEFAULT_OPTIONS, ...opts };
+  const cleaned: Partial<Options> = {};
+  for (const key in validators) {
+    const val = (raw as any)[key];
+    if (validators[key](val)) {
+      (cleaned as any)[key] = val;
+    }
+  }
+  return { ...DEFAULT_OPTIONS, ...cleaned };
 }
 
 export function saveOptions(opts: Options): void {
