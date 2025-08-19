@@ -3,6 +3,7 @@ import { loadOptions, saveOptions, DEFAULT_OPTIONS } from "./helpers/options";
 import { loadSuggestions, saveSuggestions, DEFAULT_SUGGESTIONS } from "./helpers/suggestions";
 import { loadHistory, saveHistory, addToHistory } from "./helpers/history";
 import { findPromptInput, setPromptText } from "./helpers/dom";
+import { parseRepoNames } from "./helpers/repos";
 import { VERSION } from "./version";
 (function () {
 
@@ -674,57 +675,14 @@ body, html {
     });
 
 
-
     let repos = [];
-
-    function parseRepoNames(list) {
-        const set = new Set();
-
-        if (Array.isArray(list)) {
-            list.forEach(name => {
-                name = name.trim();
-                if (name) set.add(name);
-            });
-        } else if (typeof list === 'string') {
-            list.split(/[,\n]+/).forEach(name => {
-                name = name.trim();
-                if (name) set.add(name);
-            });
-        }
-
-        const env = document.querySelector('[data-testid="environment-select"], [data-testid="environment-dropdown"], select[id*=environment], select[name*=environment]');
-        if (env) {
-            env.querySelectorAll('option').forEach(opt => {
-                const t = opt.textContent?.trim();
-                if (t) set.add(t);
-            });
-        }
-
-        const sidebar = document.querySelector('[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]');
-        if (sidebar) {
-            sidebar.querySelectorAll('a, li').forEach(el => {
-                const t = el.textContent?.trim();
-                if (t) set.add(t);
-            });
-        }
-
-        if (set.size === 0) {
-            const text = document.body.textContent || '';
-            const regex = /[\w.-]+\/[\w.-]+/g;
-            let m;
-            while ((m = regex.exec(text))) set.add(m[0]);
-        }
-
-        repos = Array.from(set);
-        return repos;
-    }
 
     function renderRepos(source) {
         const list = repoSidebar.querySelector('#gpt-repo-list');
         if (!list) return;
-        const names = parseRepoNames(source);
+        repos = parseRepoNames(source);
         list.innerHTML = '';
-        names.forEach(name => {
+        repos.forEach(name => {
             const li = document.createElement('li');
             li.textContent = name + ' ';
             [5, 10, 20].forEach(n => {
