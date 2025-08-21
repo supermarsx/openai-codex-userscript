@@ -1,6 +1,16 @@
 const memoryStorage = new Map<string, string>();
 
 let hasLocalStorage = true;
+try {
+  if (typeof localStorage === 'undefined') {
+    hasLocalStorage = false;
+  } else {
+    // Accessing localStorage may throw in some browsers when disabled
+    localStorage.getItem('');
+  }
+} catch {
+  hasLocalStorage = false;
+}
 
 function getItem(key: string): string | null {
   if (hasLocalStorage) {
