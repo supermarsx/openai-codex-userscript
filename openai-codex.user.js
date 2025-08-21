@@ -80,6 +80,15 @@
     "src/lib/storage.ts"() {
       memoryStorage = /* @__PURE__ */ new Map();
       hasLocalStorage = true;
+      try {
+        if (typeof localStorage === "undefined") {
+          hasLocalStorage = false;
+        } else {
+          localStorage.getItem("");
+        }
+      } catch (e) {
+        hasLocalStorage = false;
+      }
     }
   });
 
