@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.38
+// @version      1.0.39
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -84,18 +84,28 @@
   });
 
   // src/helpers/options.ts
-  function loadOptions() {
-    const opts = loadJSON(STORAGE_KEY, DEFAULT_OPTIONS);
-    const anyOpts = opts;
-    if ("dark" in anyOpts && !("theme" in anyOpts)) {
-      anyOpts.theme = anyOpts.dark ? "dark" : "light";
+  function sanitizeOptions(raw) {
+    const result = {};
+    for (const key in OPTION_VALIDATORS) {
+      const value = raw[key];
+      if (OPTION_VALIDATORS[key](value)) {
+        result[key] = value;
+      }
     }
+    return result;
+  }
+  function loadOptions() {
+    const raw = loadJSON(STORAGE_KEY, {});
+    if ("dark" in raw && !("theme" in raw)) {
+      raw.theme = raw.dark ? "dark" : "light";
+    }
+    const opts = sanitizeOptions(raw);
     return __spreadValues(__spreadValues({}, DEFAULT_OPTIONS), opts);
   }
   function saveOptions(opts) {
     saveJSON(STORAGE_KEY, opts);
   }
-  var DEFAULT_OPTIONS, STORAGE_KEY;
+  var DEFAULT_OPTIONS, STORAGE_KEY, OPTION_VALIDATORS;
   var init_options = __esm({
     "src/helpers/options.ts"() {
       init_storage();
@@ -130,6 +140,36 @@
         versionSidebarHeight: null
       };
       STORAGE_KEY = "gpt-script-options";
+      OPTION_VALIDATORS = {
+        theme: (v) => v === null || typeof v === "string",
+        font: (v) => v === "serif" || v === "sans-serif" || v === "monospace" || v === "custom",
+        customFont: (v) => typeof v === "string",
+        hideHeader: (v) => typeof v === "boolean",
+        hideDocs: (v) => typeof v === "boolean",
+        hideLogoText: (v) => typeof v === "boolean",
+        hideLogoImage: (v) => typeof v === "boolean",
+        hideProfile: (v) => typeof v === "boolean",
+        hideEnvironments: (v) => typeof v === "boolean",
+        threeColumnMode: (v) => typeof v === "boolean",
+        autoCheckUpdates: (v) => typeof v === "boolean",
+        showRepoSidebar: (v) => typeof v === "boolean",
+        showVersionSidebar: (v) => typeof v === "boolean",
+        clearClosedBranches: (v) => typeof v === "boolean",
+        clearMergedBranches: (v) => typeof v === "boolean",
+        clearOpenBranches: (v) => typeof v === "boolean",
+        autoArchiveMerged: (v) => typeof v === "boolean",
+        autoArchiveClosed: (v) => typeof v === "boolean",
+        historyLimit: (v) => typeof v === "number" && Number.isFinite(v),
+        disableHistory: (v) => typeof v === "boolean",
+        repoSidebarX: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        repoSidebarY: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        repoSidebarWidth: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        repoSidebarHeight: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        versionSidebarX: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        versionSidebarY: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        versionSidebarWidth: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        versionSidebarHeight: (v) => typeof v === "number" && Number.isFinite(v) || v === null
+      };
     }
   });
 
@@ -233,7 +273,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.38";
+      VERSION = "1.0.39";
     }
   });
 

@@ -64,12 +64,55 @@ export const DEFAULT_OPTIONS: Options = {
 
 const STORAGE_KEY = 'gpt-script-options';
 
-export function loadOptions(): Options {
-  const opts = loadJSON<Options>(STORAGE_KEY, DEFAULT_OPTIONS);
-  const anyOpts: any = opts;
-  if ('dark' in anyOpts && !('theme' in anyOpts)) {
-    anyOpts.theme = anyOpts.dark ? 'dark' : 'light';
+const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K] } = {
+  theme: (v): v is Options['theme'] => v === null || typeof v === 'string',
+  font: (v): v is Options['font'] =>
+    v === 'serif' || v === 'sans-serif' || v === 'monospace' || v === 'custom',
+  customFont: (v): v is Options['customFont'] => typeof v === 'string',
+  hideHeader: (v): v is Options['hideHeader'] => typeof v === 'boolean',
+  hideDocs: (v): v is Options['hideDocs'] => typeof v === 'boolean',
+  hideLogoText: (v): v is Options['hideLogoText'] => typeof v === 'boolean',
+  hideLogoImage: (v): v is Options['hideLogoImage'] => typeof v === 'boolean',
+  hideProfile: (v): v is Options['hideProfile'] => typeof v === 'boolean',
+  hideEnvironments: (v): v is Options['hideEnvironments'] => typeof v === 'boolean',
+  threeColumnMode: (v): v is Options['threeColumnMode'] => typeof v === 'boolean',
+  autoCheckUpdates: (v): v is Options['autoCheckUpdates'] => typeof v === 'boolean',
+  showRepoSidebar: (v): v is Options['showRepoSidebar'] => typeof v === 'boolean',
+  showVersionSidebar: (v): v is Options['showVersionSidebar'] => typeof v === 'boolean',
+  clearClosedBranches: (v): v is Options['clearClosedBranches'] => typeof v === 'boolean',
+  clearMergedBranches: (v): v is Options['clearMergedBranches'] => typeof v === 'boolean',
+  clearOpenBranches: (v): v is Options['clearOpenBranches'] => typeof v === 'boolean',
+  autoArchiveMerged: (v): v is Options['autoArchiveMerged'] => typeof v === 'boolean',
+  autoArchiveClosed: (v): v is Options['autoArchiveClosed'] => typeof v === 'boolean',
+  historyLimit: (v): v is Options['historyLimit'] => typeof v === 'number' && Number.isFinite(v),
+  disableHistory: (v): v is Options['disableHistory'] => typeof v === 'boolean',
+  repoSidebarX: (v): v is Options['repoSidebarX'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  repoSidebarY: (v): v is Options['repoSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  repoSidebarWidth: (v): v is Options['repoSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  repoSidebarHeight: (v): v is Options['repoSidebarHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  versionSidebarX: (v): v is Options['versionSidebarX'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  versionSidebarY: (v): v is Options['versionSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  versionSidebarWidth: (v): v is Options['versionSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  versionSidebarHeight: (v): v is Options['versionSidebarHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+};
+
+function sanitizeOptions(raw: Record<string, unknown>): Partial<Options> {
+  const result: Partial<Options> = {};
+  for (const key in OPTION_VALIDATORS) {
+    const value = (raw as any)[key];
+    if (OPTION_VALIDATORS[key as keyof Options](value)) {
+      (result as any)[key] = value;
+    }
   }
+  return result;
+}
+
+export function loadOptions(): Options {
+  const raw = loadJSON<Record<string, unknown>>(STORAGE_KEY, {});
+  if ('dark' in raw && !('theme' in raw)) {
+    raw.theme = (raw as any).dark ? 'dark' : 'light';
+  }
+  const opts = sanitizeOptions(raw);
   return { ...DEFAULT_OPTIONS, ...opts };
 }
 
