@@ -187,31 +187,33 @@
         if (name) set.add(name);
       });
     }
-    const env = document.querySelector(
-      '[data-testid="environment-select"], [data-testid="environment-dropdown"], select[id*=environment], select[name*=environment]'
-    );
-    if (env) {
-      env.querySelectorAll("option").forEach((opt) => {
-        var _a;
-        const t = (_a = opt.textContent) == null ? void 0 : _a.trim();
-        if (t) set.add(t);
-      });
-    }
-    const sidebar = document.querySelector(
-      '[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]'
-    );
-    if (sidebar) {
-      sidebar.querySelectorAll("a, li").forEach((el) => {
-        var _a;
-        const t = (_a = el.textContent) == null ? void 0 : _a.trim();
-        if (t) set.add(t);
-      });
-    }
-    if (set.size === 0) {
-      const text = document.body.textContent || "";
-      const regex = /[\w.-]+\/[\w.-]+/g;
-      let m;
-      while (m = regex.exec(text)) set.add(m[0]);
+    if (typeof document !== "undefined") {
+      const env = document.querySelector(
+        '[data-testid="environment-select"], [data-testid="environment-dropdown"], select[id*=environment], select[name*=environment]'
+      );
+      if (env) {
+        env.querySelectorAll("option").forEach((opt) => {
+          var _a;
+          const t = (_a = opt.textContent) == null ? void 0 : _a.trim();
+          if (t) set.add(t);
+        });
+      }
+      const sidebar = document.querySelector(
+        '[data-testid="repository-list"], [data-testid="repo-sidebar"], nav[aria-label*="Repos" i]'
+      );
+      if (sidebar) {
+        sidebar.querySelectorAll("a, li").forEach((el) => {
+          var _a;
+          const t = (_a = el.textContent) == null ? void 0 : _a.trim();
+          if (t) set.add(t);
+        });
+      }
+      if (set.size === 0) {
+        const text = document.body.textContent || "";
+        const regex = /[\w.-]+\/[\w.-]+/g;
+        let m;
+        while (m = regex.exec(text)) set.add(m[0]);
+      }
     }
     return Array.from(set);
   }
@@ -224,7 +226,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.38";
+      VERSION = "1.0.39";
     }
   });
 
