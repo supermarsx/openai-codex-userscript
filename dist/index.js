@@ -224,7 +224,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.38";
+      VERSION = "1.0.39";
     }
   });
 
@@ -244,6 +244,50 @@
         let dropdownObserver = null;
         let currentPromptDiv = null;
         let currentColDiv = null;
+        function createButton(text, className = "btn relative btn-secondary btn-small", id) {
+          const btn = document.createElement("button");
+          btn.className = className;
+          btn.textContent = text;
+          if (id) btn.id = id;
+          return btn;
+        }
+        function createActionBtn(id, icon, label) {
+          const div = document.createElement("div");
+          div.id = id;
+          div.className = "gpt-action-btn";
+          div.textContent = icon;
+          div.setAttribute("data-label", label);
+          return div;
+        }
+        function createSelect(id, options2) {
+          const select = document.createElement("select");
+          select.id = id;
+          options2.forEach(([value, label]) => {
+            const opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = label;
+            select.appendChild(opt);
+          });
+          return select;
+        }
+        function createCheckbox(id, labelText) {
+          const label = document.createElement("label");
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.id = id;
+          label.appendChild(input);
+          label.append(" " + labelText);
+          return label;
+        }
+        function createSettingGroup(title, children) {
+          const group = document.createElement("div");
+          group.className = "settings-group";
+          const h3 = document.createElement("h3");
+          h3.textContent = title;
+          group.appendChild(h3);
+          children.forEach((c) => group.appendChild(c));
+          return group;
+        }
         const THEME_TOKENS = {
           light: {
             "--brand-purple": "#824dff"
@@ -739,111 +783,142 @@ body, html {
         const actionBar = document.createElement("div");
         actionBar.id = "gpt-action-bar";
         document.body.appendChild(actionBar);
-        const historyBtn = document.createElement("div");
-        historyBtn.id = "gpt-history-btn";
-        historyBtn.className = "gpt-action-btn";
-        historyBtn.textContent = "\u{1F4DC}";
-        historyBtn.setAttribute("data-label", "History");
+        const historyBtn = createActionBtn("gpt-history-btn", "\u{1F4DC}", "History");
         actionBar.appendChild(historyBtn);
-        const repoBtn = document.createElement("div");
-        repoBtn.id = "gpt-repo-btn";
-        repoBtn.className = "gpt-action-btn";
-        repoBtn.textContent = "\u{1F4C1}";
-        repoBtn.setAttribute("data-label", "Repos");
+        const repoBtn = createActionBtn("gpt-repo-btn", "\u{1F4C1}", "Repos");
         actionBar.appendChild(repoBtn);
-        const versionBtn = document.createElement("div");
-        versionBtn.id = "gpt-version-btn";
-        versionBtn.className = "gpt-action-btn";
-        versionBtn.textContent = "\u{1F516}";
-        versionBtn.setAttribute("data-label", "Versions");
+        const versionBtn = createActionBtn("gpt-version-btn", "\u{1F516}", "Versions");
         actionBar.appendChild(versionBtn);
-        const settingsBtn = document.createElement("div");
-        settingsBtn.id = "gpt-settings-btn";
-        settingsBtn.className = "gpt-action-btn";
-        settingsBtn.textContent = "\u2699\uFE0F";
-        settingsBtn.setAttribute("data-label", "Settings");
+        const settingsBtn = createActionBtn("gpt-settings-btn", "\u2699\uFE0F", "Settings");
         actionBar.appendChild(settingsBtn);
         const modal = document.createElement("div");
         modal.id = "gpt-settings-modal";
-        modal.innerHTML = `
-    <div class="modal-content">
-        <h2 class="mb-2 text-lg">Settings</h2>
-        <div id="gpt-settings-version" class="mb-2 text-sm"></div>
-        <div id="gpt-settings-suggestions"></div>
-        <div class="settings-group">
-            <h3>Theme</h3>
-            <label>
-                <select id="gpt-setting-theme">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="oled">OLED</option>
-                </select>
-            </label>
-        </div>
-        <div class="settings-group">
-            <h3>Font</h3>
-            <label>
-                <select id="gpt-setting-font">
-                    <option value="sans-serif">Sans-serif</option>
-                    <option value="serif">Serif</option>
-                    <option value="monospace">Monospace</option>
-                    <option value="custom">Custom</option>
-                </select>
-            </label>
-            <input type="text" id="gpt-setting-custom-font" placeholder="Custom font" class="mt-1">
-        </div>
-        <div class="settings-group">
-            <h3>Interface</h3>
-            <label><input type="checkbox" id="gpt-setting-header"> Hide header</label><br>
-            <label><input type="checkbox" id="gpt-setting-docs"> Hide Docs link</label><br>
-            <label><input type="checkbox" id="gpt-setting-logo-text"> Hide logo text</label><br>
-            <label><input type="checkbox" id="gpt-setting-logo-image"> Hide logo image</label><br>
-            <label><input type="checkbox" id="gpt-setting-profile"> Hide profile icon</label><br>
-            <label><input type="checkbox" id="gpt-setting-environments"> Hide environments button</label><br>
-            <label><input type="checkbox" id="gpt-setting-three-column"> 3 column layout</label>
-        </div>
-        <div class="settings-group">
-            <h3>Sidebars</h3>
-            <label><input type="checkbox" id="gpt-setting-show-repos"> Show repo sidebar</label><br>
-            <label><input type="checkbox" id="gpt-setting-show-versions"> Show version sidebar</label>
-        </div>
-        <div class="settings-group">
-            <h3>Branches</h3>
-            <label><input type="checkbox" id="gpt-setting-clear-closed"> Auto-clear closed branches</label><br>
-            <label><input type="checkbox" id="gpt-setting-clear-merged"> Auto-clear merged branches</label><br>
-            <label><input type="checkbox" id="gpt-setting-clear-open"> Auto-clear open branches</label><br>
-            <label><input type="checkbox" id="gpt-setting-auto-archive-merged"> Auto-archive merged tasks</label><br>
-            <label><input type="checkbox" id="gpt-setting-auto-archive-closed"> Auto-archive closed tasks</label>
-        </div>
-        <div class="settings-group">
-            <h3>Other</h3>
-            <label><input type="checkbox" id="gpt-setting-auto-updates"> Auto-check for updates</label><br>
-            <label><input type="checkbox" id="gpt-setting-disable-history"> Disable prompt history</label><br>
-            <label>History limit <input type="number" id="gpt-setting-history-limit" min="1" style="width:4rem"></label>
-        </div>
-        <button id="gpt-update-check" class="btn btn-primary btn-small">Check for Updates</button>
-        <button id="gpt-reset-defaults" class="btn btn-secondary btn-small">Reset Defaults</button>
-        <button id="gpt-reset-windows" class="btn btn-secondary btn-small">Reset Windows</button><br>
-        <div class="mt-2 text-right"><button id="gpt-settings-close" class="btn btn-secondary btn-small">Close</button></div>
-    </div>`;
+        const modalContent = document.createElement("div");
+        modalContent.className = "modal-content";
+        const modalTitle = document.createElement("h2");
+        modalTitle.className = "mb-2 text-lg";
+        modalTitle.textContent = "Settings";
+        modalContent.appendChild(modalTitle);
+        const versionDiv = document.createElement("div");
+        versionDiv.id = "gpt-settings-version";
+        versionDiv.className = "mb-2 text-sm";
+        modalContent.appendChild(versionDiv);
+        const suggestionsDiv = document.createElement("div");
+        suggestionsDiv.id = "gpt-settings-suggestions";
+        modalContent.appendChild(suggestionsDiv);
+        const themeSelect = createSelect("gpt-setting-theme", [["light", "Light"], ["dark", "Dark"], ["oled", "OLED"]]);
+        const themeLabel = document.createElement("label");
+        themeLabel.appendChild(themeSelect);
+        modalContent.appendChild(createSettingGroup("Theme", [themeLabel]));
+        const fontSelect = createSelect("gpt-setting-font", [["sans-serif", "Sans-serif"], ["serif", "Serif"], ["monospace", "Monospace"], ["custom", "Custom"]]);
+        const fontLabel = document.createElement("label");
+        fontLabel.appendChild(fontSelect);
+        const customFontInput = document.createElement("input");
+        customFontInput.type = "text";
+        customFontInput.id = "gpt-setting-custom-font";
+        customFontInput.placeholder = "Custom font";
+        customFontInput.className = "mt-1";
+        modalContent.appendChild(createSettingGroup("Font", [fontLabel, customFontInput]));
+        const interfaceGroup = createSettingGroup("Interface", [
+          createCheckbox("gpt-setting-header", "Hide header"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-docs", "Hide Docs link"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-logo-text", "Hide logo text"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-logo-image", "Hide logo image"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-profile", "Hide profile icon"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-environments", "Hide environments button"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-three-column", "3 column layout")
+        ]);
+        modalContent.appendChild(interfaceGroup);
+        const sidebarsGroup = createSettingGroup("Sidebars", [
+          createCheckbox("gpt-setting-show-repos", "Show repo sidebar"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-show-versions", "Show version sidebar")
+        ]);
+        modalContent.appendChild(sidebarsGroup);
+        const branchesGroup = createSettingGroup("Branches", [
+          createCheckbox("gpt-setting-clear-closed", "Auto-clear closed branches"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-clear-merged", "Auto-clear merged branches"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-clear-open", "Auto-clear open branches"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-auto-archive-merged", "Auto-archive merged tasks"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-auto-archive-closed", "Auto-archive closed tasks")
+        ]);
+        modalContent.appendChild(branchesGroup);
+        const otherGroup = createSettingGroup("Other", [
+          createCheckbox("gpt-setting-auto-updates", "Auto-check for updates"),
+          document.createElement("br"),
+          createCheckbox("gpt-setting-disable-history", "Disable prompt history"),
+          document.createElement("br"),
+          (() => {
+            const l = document.createElement("label");
+            l.textContent = "History limit ";
+            const inp = document.createElement("input");
+            inp.type = "number";
+            inp.id = "gpt-setting-history-limit";
+            inp.min = "1";
+            inp.style.width = "4rem";
+            l.appendChild(inp);
+            return l;
+          })()
+        ]);
+        modalContent.appendChild(otherGroup);
+        modalContent.appendChild(createButton("Check for Updates", "btn btn-primary btn-small", "gpt-update-check"));
+        modalContent.appendChild(createButton("Reset Defaults", "btn btn-secondary btn-small", "gpt-reset-defaults"));
+        modalContent.appendChild(createButton("Reset Windows", "btn btn-secondary btn-small", "gpt-reset-windows"));
+        modalContent.appendChild(document.createElement("br"));
+        const closeWrap = document.createElement("div");
+        closeWrap.className = "mt-2 text-right";
+        closeWrap.appendChild(createButton("Close", "btn btn-secondary btn-small", "gpt-settings-close"));
+        modalContent.appendChild(closeWrap);
+        modal.appendChild(modalContent);
         document.body.appendChild(modal);
         const historyModal = document.createElement("div");
         historyModal.id = "gpt-history-modal";
-        historyModal.innerHTML = `
-    <div class="modal-content">
-        <h2 class="mb-2 text-lg">Prompt History</h2>
-        <input type="text" id="gpt-history-search" class="w-full mb-2" placeholder="Search...">
-        <div id="gpt-history-list"></div>
-        <div class="mt-2 text-right"><button id="gpt-history-clear" class="btn btn-secondary btn-small">Clear</button> <button id="gpt-history-close" class="btn btn-secondary btn-small">Close</button></div>
-    </div>`;
+        const histContent = document.createElement("div");
+        histContent.className = "modal-content";
+        const histTitle = document.createElement("h2");
+        histTitle.className = "mb-2 text-lg";
+        histTitle.textContent = "Prompt History";
+        histContent.appendChild(histTitle);
+        const histSearch = document.createElement("input");
+        histSearch.type = "text";
+        histSearch.id = "gpt-history-search";
+        histSearch.className = "w-full mb-2";
+        histSearch.placeholder = "Search...";
+        histContent.appendChild(histSearch);
+        const histList = document.createElement("div");
+        histList.id = "gpt-history-list";
+        histContent.appendChild(histList);
+        const histActions = document.createElement("div");
+        histActions.className = "mt-2 text-right";
+        histActions.appendChild(createButton("Clear", "btn btn-secondary btn-small", "gpt-history-clear"));
+        histActions.appendChild(createButton("Close", "btn btn-secondary btn-small", "gpt-history-close"));
+        histContent.appendChild(histActions);
+        historyModal.appendChild(histContent);
         document.body.appendChild(historyModal);
         const historyPreview = document.createElement("div");
         historyPreview.id = "gpt-history-preview";
-        historyPreview.innerHTML = `
-    <div class="modal-content">
-        <pre id="gpt-preview-text" class="whitespace-pre-wrap"></pre>
-        <div class="mt-2 text-right"><button id="gpt-preview-use" class="btn btn-primary btn-small">Use</button> <button id="gpt-preview-cancel" class="btn btn-secondary btn-small">Cancel</button></div>
-    </div>`;
+        const previewContent = document.createElement("div");
+        previewContent.className = "modal-content";
+        const previewPre = document.createElement("pre");
+        previewPre.id = "gpt-preview-text";
+        previewPre.className = "whitespace-pre-wrap";
+        previewContent.appendChild(previewPre);
+        const previewActions = document.createElement("div");
+        previewActions.className = "mt-2 text-right";
+        previewActions.appendChild(createButton("Use", "btn btn-primary btn-small", "gpt-preview-use"));
+        previewActions.appendChild(createButton("Cancel", "btn btn-secondary btn-small", "gpt-preview-cancel"));
+        previewContent.appendChild(previewActions);
+        historyPreview.appendChild(previewContent);
         document.body.appendChild(historyPreview);
         const previewTextEl = historyPreview.querySelector("#gpt-preview-text");
         const previewUseBtn = historyPreview.querySelector("#gpt-preview-use");
@@ -863,7 +938,17 @@ body, html {
         });
         const repoSidebar = document.createElement("div");
         repoSidebar.id = "gpt-repo-sidebar";
-        repoSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Repositories</h3><button id="gpt-repo-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-repo-list"></ul>';
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "flex justify-between items-center";
+        const repoTitle = document.createElement("h3");
+        repoTitle.className = "m-0";
+        repoTitle.textContent = "Repositories";
+        repoHeader.appendChild(repoTitle);
+        repoHeader.appendChild(createButton("\xD7", "btn relative btn-secondary btn-small", "gpt-repo-hide"));
+        repoSidebar.appendChild(repoHeader);
+        const repoList = document.createElement("ul");
+        repoList.id = "gpt-repo-list";
+        repoSidebar.appendChild(repoList);
         document.body.appendChild(repoSidebar);
         makeSidebarInteractive(repoSidebar, "repoSidebar");
         repoSidebar.querySelector("#gpt-repo-hide").addEventListener("click", () => {
@@ -873,7 +958,24 @@ body, html {
         });
         const versionSidebar = document.createElement("div");
         versionSidebar.id = "gpt-version-sidebar";
-        versionSidebar.innerHTML = '<div class="flex justify-between items-center"><h3 class="m-0">Versions</h3><button id="gpt-version-hide" class="btn relative btn-secondary btn-small">\xD7</button></div><ul id="gpt-version-list"></ul><div id="gpt-branch-actions"><button class="btn relative btn-secondary btn-small" id="gpt-clear-open">Clear Open</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-merged">Clear Merged</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-closed">Clear Closed</button> <button class="btn relative btn-secondary btn-small" id="gpt-clear-all">Clear All</button></div>';
+        const versionHeader = document.createElement("div");
+        versionHeader.className = "flex justify-between items-center";
+        const versionTitle = document.createElement("h3");
+        versionTitle.className = "m-0";
+        versionTitle.textContent = "Versions";
+        versionHeader.appendChild(versionTitle);
+        versionHeader.appendChild(createButton("\xD7", "btn relative btn-secondary btn-small", "gpt-version-hide"));
+        versionSidebar.appendChild(versionHeader);
+        const versionList = document.createElement("ul");
+        versionList.id = "gpt-version-list";
+        versionSidebar.appendChild(versionList);
+        const branchActions = document.createElement("div");
+        branchActions.id = "gpt-branch-actions";
+        branchActions.appendChild(createButton("Clear Open", "btn relative btn-secondary btn-small", "gpt-clear-open"));
+        branchActions.appendChild(createButton("Clear Merged", "btn relative btn-secondary btn-small", "gpt-clear-merged"));
+        branchActions.appendChild(createButton("Clear Closed", "btn relative btn-secondary btn-small", "gpt-clear-closed"));
+        branchActions.appendChild(createButton("Clear All", "btn relative btn-secondary btn-small", "gpt-clear-all"));
+        versionSidebar.appendChild(branchActions);
         document.body.appendChild(versionSidebar);
         makeSidebarInteractive(versionSidebar, "versionSidebar");
         versionSidebar.querySelector("#gpt-version-hide").addEventListener("click", () => {
@@ -886,14 +988,12 @@ body, html {
           const list = repoSidebar.querySelector("#gpt-repo-list");
           if (!list) return;
           repos = parseRepoNames(source);
-          list.innerHTML = "";
+          list.textContent = "";
           repos.forEach((name) => {
             const li = document.createElement("li");
             li.textContent = name + " ";
             [5, 10, 20].forEach((n) => {
-              const btn = document.createElement("button");
-              btn.className = "btn relative btn-secondary btn-small";
-              btn.textContent = String(n);
+              const btn = createButton(String(n));
               btn.addEventListener("click", () => renderVersions(name, n));
               li.appendChild(btn);
             });
@@ -903,7 +1003,7 @@ body, html {
         function renderVersions(repo, count) {
           const list = versionSidebar.querySelector("#gpt-version-list");
           if (!list) return;
-          list.innerHTML = "";
+          list.textContent = "";
           for (let i = 1; i <= count; i++) {
             const li = document.createElement("li");
             li.textContent = repo + " v" + i;
@@ -944,12 +1044,33 @@ body, html {
           overlay.style.display = "flex";
           overlay.style.alignItems = "center";
           overlay.style.justifyContent = "center";
-          overlay.innerHTML = `<div style="background: var(--background); color: var(--foreground); padding: 1rem; border-radius: 0.5rem; width: 200px;">
-            <div style="height:6px;background:var(--ring);border-radius:3px;overflow:hidden;">
-                <div id="gpt-progress-bar" style="width:0;height:100%;background:var(--brand-purple);transition:width 0.2s;"></div>
-            </div>
-            <div id="gpt-progress-text" style="margin-top:4px;font-size:12px;text-align:center;">0/${buttons.length}</div>
-        </div>`;
+          const overlayBox = document.createElement("div");
+          overlayBox.style.background = "var(--background)";
+          overlayBox.style.color = "var(--foreground)";
+          overlayBox.style.padding = "1rem";
+          overlayBox.style.borderRadius = "0.5rem";
+          overlayBox.style.width = "200px";
+          const barOuter = document.createElement("div");
+          barOuter.style.height = "6px";
+          barOuter.style.background = "var(--ring)";
+          barOuter.style.borderRadius = "3px";
+          barOuter.style.overflow = "hidden";
+          const progressBar = document.createElement("div");
+          progressBar.id = "gpt-progress-bar";
+          progressBar.style.width = "0";
+          progressBar.style.height = "100%";
+          progressBar.style.background = "var(--brand-purple)";
+          progressBar.style.transition = "width 0.2s";
+          barOuter.appendChild(progressBar);
+          overlayBox.appendChild(barOuter);
+          const progressText = document.createElement("div");
+          progressText.id = "gpt-progress-text";
+          progressText.style.marginTop = "4px";
+          progressText.style.fontSize = "12px";
+          progressText.style.textAlign = "center";
+          progressText.textContent = `0/${buttons.length}`;
+          overlayBox.appendChild(progressText);
+          overlay.appendChild(overlayBox);
           document.body.appendChild(overlay);
           let i = 0;
           function next() {
@@ -995,7 +1116,11 @@ body, html {
         }
         function renderSuggestions() {
           const wrap = modal.querySelector("#gpt-settings-suggestions");
-          wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
+          wrap.textContent = "";
+          const h3 = document.createElement("h3");
+          h3.className = "mb-1";
+          h3.textContent = "Prompt Suggestions";
+          wrap.appendChild(h3);
           const table = document.createElement("table");
           table.className = "w-full text-sm";
           const thead = document.createElement("thead");
@@ -1015,12 +1140,8 @@ body, html {
             const cell = document.createElement("td");
             cell.textContent = s;
             const actions = document.createElement("td");
-            const edit = document.createElement("button");
-            edit.className = "btn relative btn-secondary btn-small";
-            edit.textContent = "Edit";
-            const del = document.createElement("button");
-            del.className = "btn relative btn-secondary btn-small";
-            del.textContent = "Remove";
+            const edit = createButton("Edit");
+            const del = createButton("Remove");
             edit.addEventListener("click", () => {
               const inp = window.prompt("Edit suggestion:", s);
               if (inp !== null) {
@@ -1044,9 +1165,7 @@ body, html {
           });
           table.appendChild(tbody);
           wrap.appendChild(table);
-          const addBtn = document.createElement("button");
-          addBtn.className = "btn relative btn-secondary btn-small";
-          addBtn.textContent = "Add";
+          const addBtn = createButton("Add");
           addBtn.addEventListener("click", () => {
             const inp = window.prompt("New suggestion:");
             if (inp) {
@@ -1057,9 +1176,7 @@ body, html {
             }
           });
           wrap.appendChild(addBtn);
-          const exportBtn = document.createElement("button");
-          exportBtn.className = "btn relative btn-secondary btn-small";
-          exportBtn.textContent = "Export";
+          const exportBtn = createButton("Export");
           exportBtn.addEventListener("click", () => {
             try {
               const blob = new Blob([JSON.stringify(suggestions, null, 2)], { type: "application/json" });
@@ -1077,9 +1194,7 @@ body, html {
             }
           });
           wrap.appendChild(exportBtn);
-          const importBtn = document.createElement("button");
-          importBtn.className = "btn relative btn-secondary btn-small";
-          importBtn.textContent = "Import";
+          const importBtn = createButton("Import");
           importBtn.addEventListener("click", () => {
             const input = document.createElement("input");
             input.type = "file";
@@ -1124,14 +1239,14 @@ body, html {
           renderSuggestions();
           const versionEl = modal.querySelector("#gpt-settings-version");
           if (versionEl) versionEl.textContent = `Version ${SCRIPT_VERSION}`;
-          const themeSelect = modal.querySelector("#gpt-setting-theme");
+          const themeSelect2 = modal.querySelector("#gpt-setting-theme");
           const prefersDark = typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
           const systemTheme = prefersDark ? "dark" : "light";
-          themeSelect.value = options.theme || systemTheme;
-          const fontSelect = modal.querySelector("#gpt-setting-font");
-          const customFontInput = modal.querySelector("#gpt-setting-custom-font");
-          fontSelect.value = options.font;
-          if (customFontInput) customFontInput.value = options.customFont;
+          themeSelect2.value = options.theme || systemTheme;
+          const fontSelect2 = modal.querySelector("#gpt-setting-font");
+          const customFontInput2 = modal.querySelector("#gpt-setting-custom-font");
+          fontSelect2.value = options.font;
+          if (customFontInput2) customFontInput2.value = options.customFont;
           modal.querySelector("#gpt-setting-header").checked = options.hideHeader;
           modal.querySelector("#gpt-setting-docs").checked = options.hideDocs;
           modal.querySelector("#gpt-setting-logo-text").checked = options.hideLogoText;
@@ -1160,7 +1275,7 @@ body, html {
         }
         function renderHistory() {
           const wrap = historyModal.querySelector("#gpt-history-list");
-          wrap.innerHTML = "";
+          wrap.textContent = "";
           const ul = document.createElement("ul");
           const items = filterHistory(history, historyQuery);
           items.forEach(([h, i]) => {
@@ -1169,23 +1284,17 @@ body, html {
             const first = h.split(/\r?\n/)[0];
             span.textContent = first.length > 30 ? first.slice(0, 30) + "\u2026" : first;
             li.appendChild(span);
-            const useBtn = document.createElement("button");
-            useBtn.className = "btn relative btn-secondary btn-small";
-            useBtn.textContent = "Use";
+            const useBtn = createButton("Use");
             useBtn.addEventListener("click", () => {
               openHistoryPreview(h);
             });
             li.appendChild(useBtn);
-            const restoreBtn = document.createElement("button");
-            restoreBtn.className = "btn relative btn-secondary btn-small";
-            restoreBtn.textContent = "Restore";
+            const restoreBtn = createButton("Restore");
             restoreBtn.addEventListener("click", () => {
               setPromptText2(currentPromptDiv || findPromptInput2(), h);
             });
             li.appendChild(restoreBtn);
-            const delBtn = document.createElement("button");
-            delBtn.className = "btn relative btn-secondary btn-small";
-            delBtn.textContent = "Delete";
+            const delBtn = createButton("Delete");
             delBtn.addEventListener("click", () => {
               history.splice(i, 1);
               saveHistory(history);
