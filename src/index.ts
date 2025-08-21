@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { loadOptions, saveOptions, DEFAULT_OPTIONS } from "./helpers/options";
 import { loadSuggestions, saveSuggestions, DEFAULT_SUGGESTIONS } from "./helpers/suggestions";
+import { renderSuggestionsUI } from "./helpers/suggestions-ui";
 import { loadHistory, saveHistory, addToHistory } from "./helpers/history";
 import { findPromptInput, setPromptText } from "./helpers/dom";
 import { parseRepoNames } from "./helpers/repos";
@@ -796,138 +797,12 @@ body, html {
             injectDropdown(currentPromptDiv, currentColDiv);
         }
     }
-
     function renderSuggestions() {
         const wrap = modal.querySelector('#gpt-settings-suggestions');
-        wrap.innerHTML = '<h3 class="mb-1">Prompt Suggestions</h3>';
-        const table = document.createElement('table');
-        table.className = 'w-full text-sm';
-
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        const textHead = document.createElement('th');
-        textHead.textContent = 'Suggestion';
-        textHead.className = 'text-left';
-        const actionsHead = document.createElement('th');
-        actionsHead.textContent = 'Actions';
-        headerRow.appendChild(textHead);
-        headerRow.appendChild(actionsHead);
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        suggestions.forEach((s, i) => {
-            const row = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.textContent = s;
-            const actions = document.createElement('td');
-            const edit = document.createElement('button');
-            edit.className = 'btn relative btn-secondary btn-small';
-            edit.textContent = 'Edit';
-            const del = document.createElement('button');
-            del.className = 'btn relative btn-secondary btn-small';
-            del.textContent = 'Remove';
-            edit.addEventListener('click', () => {
-                const inp = window.prompt('Edit suggestion:', s);
-                if (inp !== null) {
-                    suggestions[i] = inp.trim();
-                    saveSuggestions(suggestions);
-                    renderSuggestions();
-                    refreshDropdown();
-                }
-            });
-            del.addEventListener('click', () => {
-                suggestions.splice(i, 1);
-                saveSuggestions(suggestions);
-                renderSuggestions();
-                refreshDropdown();
-            });
-            actions.appendChild(edit);
-            actions.appendChild(del);
-            row.appendChild(cell);
-            row.appendChild(actions);
-            tbody.appendChild(row);
+        renderSuggestionsUI(wrap, suggestions, {
+            save: saveSuggestions,
+            refresh: refreshDropdown,
         });
-        table.appendChild(tbody);
-        wrap.appendChild(table);
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn relative btn-secondary btn-small';
-        addBtn.textContent = 'Add';
-        addBtn.addEventListener('click', () => {
-            const inp = window.prompt('New suggestion:');
-            if (inp) {
-                suggestions.push(inp.trim());
-                saveSuggestions(suggestions);
-                renderSuggestions();
-                refreshDropdown();
-            }
-        });
-        wrap.appendChild(addBtn);
-
-        const exportBtn = document.createElement('button');
-        exportBtn.className = 'btn relative btn-secondary btn-small';
-        exportBtn.textContent = 'Export';
-        exportBtn.addEventListener('click', () => {
-            try {
-                const blob = new Blob([JSON.stringify(suggestions, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'suggestions.json';
-                document.body.appendChild(a);
-                a.click();
-                URL.revokeObjectURL(url);
-                a.remove();
-            } catch (e) {
-                console.error('Failed to export suggestions', e);
-                window.alert('Failed to export suggestions');
-            }
-        });
-        wrap.appendChild(exportBtn);
-
-        const importBtn = document.createElement('button');
-        importBtn.className = 'btn relative btn-secondary btn-small';
-        importBtn.textContent = 'Import';
-        importBtn.addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            input.addEventListener('change', () => {
-                const file = input.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                    try {
-                        const data = JSON.parse(String(reader.result));
-                        if (Array.isArray(data)) {
-                            const list = Array.from(
-                                new Set(
-                                    data
-                                        .map(d => String(d).trim())
-                                        .filter(s => s.length > 0)
-                                )
-                            );
-                            if (list.length > 0) {
-                                suggestions = list;
-                                saveSuggestions(suggestions);
-                                renderSuggestions();
-                                refreshDropdown();
-                            } else {
-                                window.alert('Invalid suggestions file');
-                            }
-                        } else {
-                            window.alert('Invalid suggestions file');
-                        }
-                    } catch (err) {
-                        console.error('Failed to import suggestions', err);
-                        window.alert('Failed to import suggestions');
-                    }
-                };
-                reader.readAsText(file);
-            });
-            input.click();
-        });
-        wrap.appendChild(importBtn);
     }
 
     function openSettings() {
