@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.37
+// @version      1.0.38
 // @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -33,9 +33,33 @@
   };
 
   // src/lib/storage.ts
+  function getItem(key) {
+    var _a;
+    if (hasLocalStorage) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        console.error("localStorage unavailable, using in-memory storage", e);
+        hasLocalStorage = false;
+      }
+    }
+    return (_a = memoryStorage.get(key)) != null ? _a : null;
+  }
+  function setItem(key, value) {
+    if (hasLocalStorage) {
+      try {
+        localStorage.setItem(key, value);
+        return;
+      } catch (e) {
+        console.error("localStorage unavailable, using in-memory storage", e);
+        hasLocalStorage = false;
+      }
+    }
+    memoryStorage.set(key, value);
+  }
   function loadJSON(key, fallback) {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = getItem(key);
       if (raw) {
         return JSON.parse(raw);
       }
@@ -46,13 +70,16 @@
   }
   function saveJSON(key, data) {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      setItem(key, JSON.stringify(data));
     } catch (e) {
       console.error(`Failed to save ${key}`, e);
     }
   }
+  var memoryStorage, hasLocalStorage;
   var init_storage = __esm({
     "src/lib/storage.ts"() {
+      memoryStorage = /* @__PURE__ */ new Map();
+      hasLocalStorage = true;
     }
   });
 
@@ -206,7 +233,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.37";
+      VERSION = "1.0.38";
     }
   });
 
