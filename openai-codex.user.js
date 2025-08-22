@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.39
-// @description  Adds a prompt suggestion dropdown above the input in ChatGPT Codex and provides a settings modal
+// @version      1.0.40
+// @description  Adds a prompt suggestion dropdown inside the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
@@ -33,26 +33,35 @@
   };
 
   // src/lib/storage.ts
+  function hasLocalStorage() {
+    try {
+      if (typeof localStorage === "undefined") {
+        return false;
+      }
+      localStorage.getItem("");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
   function getItem(key) {
     var _a;
-    if (hasLocalStorage) {
+    if (hasLocalStorage()) {
       try {
         return localStorage.getItem(key);
       } catch (e) {
         console.error("localStorage unavailable, using in-memory storage", e);
-        hasLocalStorage = false;
       }
     }
     return (_a = memoryStorage.get(key)) != null ? _a : null;
   }
   function setItem(key, value) {
-    if (hasLocalStorage) {
+    if (hasLocalStorage()) {
       try {
         localStorage.setItem(key, value);
         return;
       } catch (e) {
         console.error("localStorage unavailable, using in-memory storage", e);
-        hasLocalStorage = false;
       }
     }
     memoryStorage.set(key, value);
@@ -75,20 +84,10 @@
       console.error(`Failed to save ${key}`, e);
     }
   }
-  var memoryStorage, hasLocalStorage;
+  var memoryStorage;
   var init_storage = __esm({
     "src/lib/storage.ts"() {
       memoryStorage = /* @__PURE__ */ new Map();
-      hasLocalStorage = true;
-      try {
-        if (typeof localStorage === "undefined") {
-          hasLocalStorage = false;
-        } else {
-          localStorage.getItem("");
-        }
-      } catch (e) {
-        hasLocalStorage = false;
-      }
     }
   });
 
@@ -284,7 +283,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.39";
+      VERSION = "1.0.40";
     }
   });
 
@@ -1606,7 +1605,10 @@ body, html {
           container.className = "flex w-full gap-2";
           container.appendChild(dropdown);
           wrapper.appendChild(container);
-          colDiv.insertBefore(wrapper, colDiv.firstChild);
+          const inputContainer = promptDiv.parentElement;
+          if (inputContainer) {
+            inputContainer.insertBefore(wrapper, promptDiv);
+          }
           dropdown.addEventListener("change", () => {
             const value = dropdown.value;
             if (!value) return;
