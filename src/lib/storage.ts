@@ -1,37 +1,36 @@
 const memoryStorage = new Map<string, string>();
 
-let hasLocalStorage = true;
-try {
-  if (typeof localStorage === 'undefined') {
-    hasLocalStorage = false;
-  } else {
+function hasLocalStorage(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return false;
+    }
     // Accessing localStorage may throw in some browsers when disabled
     localStorage.getItem('');
+    return true;
+  } catch {
+    return false;
   }
-} catch {
-  hasLocalStorage = false;
 }
 
 function getItem(key: string): string | null {
-  if (hasLocalStorage) {
+  if (hasLocalStorage()) {
     try {
       return localStorage.getItem(key);
     } catch (e) {
       console.error('localStorage unavailable, using in-memory storage', e);
-      hasLocalStorage = false;
     }
   }
   return memoryStorage.get(key) ?? null;
 }
 
 function setItem(key: string, value: string): void {
-  if (hasLocalStorage) {
+  if (hasLocalStorage()) {
     try {
       localStorage.setItem(key, value);
       return;
     } catch (e) {
       console.error('localStorage unavailable, using in-memory storage', e);
-      hasLocalStorage = false;
     }
   }
   memoryStorage.set(key, value);

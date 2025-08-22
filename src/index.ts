@@ -1311,7 +1311,11 @@ body, html {
         container.appendChild(dropdown);
 
         wrapper.appendChild(container);
-        colDiv.insertBefore(wrapper, colDiv.firstChild);
+
+        const inputContainer = promptDiv.parentElement;
+        if (inputContainer) {
+            inputContainer.insertBefore(wrapper, promptDiv);
+        }
 
         // OpenAI Codex UI now includes a built-in history button. We no longer
         // need to inject our custom one, so these lines were removed.
