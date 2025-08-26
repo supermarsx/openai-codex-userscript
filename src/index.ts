@@ -329,25 +329,10 @@ body, html {
 
 
 
-
-    function findByText(text) {
-        const elements = Array.from(document.querySelectorAll('body *'));
-        return elements.find(el => el.textContent && el.textContent.includes(text)) || null;
-    }
-
     function toggleHeader(hide) {
-        const targetTexts = ['What are we coding next?', 'What should we code next?'];
-        const node = targetTexts.map(t => findByText(t)).find(Boolean) as HTMLElement | null;
-        if (node) {
-            node.classList.forEach(cls => {
-                document.querySelectorAll(`.${cls}`).forEach(el => {
-                    (el as HTMLElement).style.display = hide ? 'none' : '';
-                });
-            });
-        }
-        const headers = document.querySelectorAll(".text-3xl");
+        const headers = document.querySelectorAll('body h1');
         headers.forEach((el) => {
-            (el as HTMLElement).style.display = hide ? "none" : "";
+            (el as HTMLElement).style.display = hide ? 'none' : '';
         });
     }
 
