@@ -337,19 +337,17 @@ body, html {
 
     function toggleHeader(hide) {
         const targetTexts = ['What are we coding next?', 'What should we code next?'];
-        let node = targetTexts.map(t => findByText(t)).find(Boolean) as HTMLElement | null;
-        if (!node) {
-            const xpath = '/html/body/div[1]/div/div[1]/div/main/div/div[2]/div/div/div[1]/h1';
-            // Use numeric constant to avoid ReferenceError when XPathResult is undefined
-            node = document.evaluate(xpath, document, null, 9, null).singleNodeValue as HTMLElement | null;
-        }
+        const node = targetTexts.map(t => findByText(t)).find(Boolean) as HTMLElement | null;
         if (node) {
-            node.style.display = hide ? 'none' : '';
+            node.classList.forEach(cls => {
+                document.querySelectorAll(`.${cls}`).forEach(el => {
+                    (el as HTMLElement).style.display = hide ? 'none' : '';
+                });
+            });
         }
-
-        const headers = document.querySelectorAll('.text-3xl');
-        headers.forEach(el => {
-            (el as HTMLElement).style.display = hide ? 'none' : '';
+        const headers = document.querySelectorAll(".text-3xl");
+        headers.forEach((el) => {
+            (el as HTMLElement).style.display = hide ? "none" : "";
         });
     }
 
