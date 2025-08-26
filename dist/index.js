@@ -274,7 +274,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.42";
+      VERSION = "1.0.43";
     }
   });
 
@@ -609,6 +609,10 @@ body, html {
           if (node) {
             node.style.display = hide ? "none" : "";
           }
+          const headers = document.querySelectorAll(".text-3xl");
+          headers.forEach((el) => {
+            el.style.display = hide ? "none" : "";
+          });
         }
         function toggleDocs(hide) {
           const links = Array.from(document.querySelectorAll("a")).filter((a) => a.textContent && a.textContent.includes("Docs"));

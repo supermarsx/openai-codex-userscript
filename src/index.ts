@@ -346,6 +346,11 @@ body, html {
         if (node) {
             node.style.display = hide ? 'none' : '';
         }
+
+        const headers = document.querySelectorAll('.text-3xl');
+        headers.forEach(el => {
+            (el as HTMLElement).style.display = hide ? 'none' : '';
+        });
     }
 
     function toggleDocs(hide) {
