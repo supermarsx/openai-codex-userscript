@@ -337,9 +337,9 @@ body, html {
 
     function toggleHeader(hide) {
         const targetTexts = ['What are we coding next?', 'What should we code next?'];
-        let node = document.querySelector('h1.mb-4.pt-4.text-2xl');
-        if (!node || !targetTexts.some(t => node.textContent?.includes(t))) {
-            node = findByText('What should we code next?');
+        let node = targetTexts.map(t => findByText(t)).find(Boolean);
+        if (!node) {
+            node = document.querySelector('h1.mb-4.pt-4.text-2xl');
         }
         if (node && targetTexts.some(t => node.textContent?.includes(t))) {
             node.style.display = hide ? 'none' : '';
