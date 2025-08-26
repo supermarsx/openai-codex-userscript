@@ -274,7 +274,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.45";
+      VERSION = "1.0.46";
     }
   });
 
@@ -595,21 +595,8 @@ body, html {
         let options = loadOptions();
         let history = loadHistory();
         let historyQuery = "";
-        function findByText(text) {
-          const elements = Array.from(document.querySelectorAll("body *"));
-          return elements.find((el) => el.textContent && el.textContent.includes(text)) || null;
-        }
         function toggleHeader(hide) {
-          const targetTexts = ["What are we coding next?", "What should we code next?"];
-          const node = targetTexts.map((t) => findByText(t)).find(Boolean);
-          if (node) {
-            node.classList.forEach((cls) => {
-              document.querySelectorAll(`.${cls}`).forEach((el) => {
-                el.style.display = hide ? "none" : "";
-              });
-            });
-          }
-          const headers = document.querySelectorAll(".text-3xl");
+          const headers = document.querySelectorAll("body h1");
           headers.forEach((el) => {
             el.style.display = hide ? "none" : "";
           });
