@@ -274,7 +274,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.41";
+      VERSION = "1.0.42";
     }
   });
 
@@ -603,12 +603,10 @@ body, html {
           const targetTexts = ["What are we coding next?", "What should we code next?"];
           let node = targetTexts.map((t) => findByText(t)).find(Boolean);
           if (!node) {
-            node = document.querySelector("h1.mb-4.pt-4.text-2xl");
+            const xpath = "/html/body/div[1]/div/div[1]/div/main/div/div[2]/div/div/div[1]/h1";
+            node = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
           }
-          if (node && targetTexts.some((t) => {
-            var _a;
-            return (_a = node.textContent) == null ? void 0 : _a.includes(t);
-          })) {
+          if (node) {
             node.style.display = hide ? "none" : "";
           }
         }
