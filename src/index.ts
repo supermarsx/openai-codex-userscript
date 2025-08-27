@@ -361,8 +361,8 @@ body, html {
         if (node) node.style.display = hide ? 'none' : '';
     }
 
-    function toggleEnvironments(hide) {
-        const link = document.querySelector('a[href="/codex/settings/environments"]');
+    function toggleSettingsButton(hide) {
+        const link = document.querySelector('a[href="/codex/settings"]');
         if (link) link.style.display = hide ? 'none' : '';
     }
 
@@ -497,7 +497,7 @@ body, html {
         toggleLogoText(options.hideLogoText);
         toggleLogoImage(options.hideLogoImage);
         toggleProfile(options.hideProfile);
-        toggleEnvironments(options.hideEnvironments);
+        toggleSettingsButton(options.hideSettings);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
 
@@ -611,7 +611,7 @@ body, html {
         createCheckbox('gpt-setting-logo-text', 'Hide logo text'), document.createElement('br'),
         createCheckbox('gpt-setting-logo-image', 'Hide logo image'), document.createElement('br'),
         createCheckbox('gpt-setting-profile', 'Hide profile icon'), document.createElement('br'),
-        createCheckbox('gpt-setting-environments', 'Hide environments button'), document.createElement('br'),
+        createCheckbox('gpt-setting-settings-button', 'Hide Settings button'), document.createElement('br'),
         createCheckbox('gpt-setting-three-column', '3 column layout')
     ]);
     modalContent.appendChild(interfaceGroup);
@@ -1044,7 +1044,7 @@ body, html {
         modal.querySelector('#gpt-setting-logo-text').checked = options.hideLogoText;
         modal.querySelector('#gpt-setting-logo-image').checked = options.hideLogoImage;
         modal.querySelector('#gpt-setting-profile').checked = options.hideProfile;
-        modal.querySelector('#gpt-setting-environments').checked = options.hideEnvironments;
+        modal.querySelector('#gpt-setting-settings-button').checked = options.hideSettings;
         modal.querySelector('#gpt-setting-three-column').checked = options.threeColumnMode;
         modal.querySelector('#gpt-setting-auto-updates').checked = options.autoCheckUpdates;
         modal.querySelector('#gpt-setting-disable-history').checked = options.disableHistory;
@@ -1145,7 +1145,7 @@ body, html {
     modal.querySelector('#gpt-setting-logo-text').addEventListener('change', (e) => { options.hideLogoText = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-logo-image').addEventListener('change', (e) => { options.hideLogoImage = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-profile').addEventListener('change', (e) => { options.hideProfile = e.target.checked; saveOptions(options); applyOptions(); });
-    modal.querySelector('#gpt-setting-environments').addEventListener('change', (e) => { options.hideEnvironments = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-settings-button').addEventListener('change', (e) => { options.hideSettings = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-three-column').addEventListener('change', (e) => { options.threeColumnMode = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-auto-updates').addEventListener('change', (e) => { options.autoCheckUpdates = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-disable-history').addEventListener('change', (e) => { options.disableHistory = e.target.checked; saveOptions(options); });
@@ -1177,7 +1177,7 @@ body, html {
         toggleLogoText(options.hideLogoText);
         toggleLogoImage(options.hideLogoImage);
         toggleProfile(options.hideProfile);
-        toggleEnvironments(options.hideEnvironments);
+        toggleSettingsButton(options.hideSettings);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
     });

@@ -13,7 +13,7 @@ exports.DEFAULT_OPTIONS = {
     hideLogoText: false,
     hideLogoImage: false,
     hideProfile: false,
-    hideEnvironments: false,
+    hideSettings: false,
     threeColumnMode: false,
     autoCheckUpdates: false,
     showRepoSidebar: true,
@@ -44,7 +44,7 @@ const OPTION_VALIDATORS = {
     hideLogoText: (v) => typeof v === 'boolean',
     hideLogoImage: (v) => typeof v === 'boolean',
     hideProfile: (v) => typeof v === 'boolean',
-    hideEnvironments: (v) => typeof v === 'boolean',
+    hideSettings: (v) => typeof v === 'boolean',
     threeColumnMode: (v) => typeof v === 'boolean',
     autoCheckUpdates: (v) => typeof v === 'boolean',
     showRepoSidebar: (v) => typeof v === 'boolean',
@@ -79,6 +79,10 @@ function loadOptions() {
     const raw = (0, storage_1.loadJSON)(STORAGE_KEY, {});
     if ('dark' in raw && !('theme' in raw)) {
         raw.theme = raw.dark ? 'dark' : 'light';
+    }
+    if ('hideEnvironments' in raw && !('hideSettings' in raw)) {
+        raw.hideSettings = raw.hideEnvironments;
+        delete raw.hideEnvironments;
     }
     const opts = sanitizeOptions(raw);
     return Object.assign(Object.assign({}, exports.DEFAULT_OPTIONS), opts);

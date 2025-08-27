@@ -29,3 +29,17 @@ test('loadOptions discards invalid and unknown values', { concurrency: false }, 
   assert.strictEqual(opts.historyLimit, DEFAULT_OPTIONS.historyLimit);
   assert.ok(!('foo' in opts));
 });
+
+test('loadOptions migrates hideEnvironments to hideSettings', { concurrency: false }, () => {
+  const dom = new JSDOM('', { url: 'https://example.com' });
+  (globalThis as any).localStorage = dom.window.localStorage;
+
+  dom.window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ hideEnvironments: true })
+  );
+
+  const opts = loadOptions();
+  assert.strictEqual((opts as any).hideEnvironments, undefined);
+  assert.strictEqual(opts.hideSettings, true);
+});
