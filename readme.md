@@ -21,7 +21,7 @@ where you can manage your prompt suggestions and toggle various UI options:
 * Switch between Light, Dark and OLED themes.
 * Hide the “What are we coding next?” or “What should we code next?” header.
 * Hide the “Docs” navigation link.
-* Hide the "Environments" button.
+* Hide the "Settings" button.
 * Toggle the repository sidebar that lists detected repositories.
 * Toggle the version sidebar that displays branches for the selected repository.
 * Enable auto-archiving when a task is merged or closed.

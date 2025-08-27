@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OpenAI Codex UI Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      1.0.46
+// @version      1.0.47
 // @description  Adds a prompt suggestion dropdown inside the input in ChatGPT Codex and provides a settings modal
 // @match        https://chatgpt.com/codex*
 // @grant        GM_xmlhttpRequest
@@ -107,6 +107,10 @@
     if ("dark" in raw && !("theme" in raw)) {
       raw.theme = raw.dark ? "dark" : "light";
     }
+    if ("hideEnvironments" in raw && !("hideSettings" in raw)) {
+      raw.hideSettings = raw.hideEnvironments;
+      delete raw.hideEnvironments;
+    }
     const opts = sanitizeOptions(raw);
     return __spreadValues(__spreadValues({}, DEFAULT_OPTIONS), opts);
   }
@@ -126,7 +130,7 @@
         hideLogoText: false,
         hideLogoImage: false,
         hideProfile: false,
-        hideEnvironments: false,
+        hideSettings: false,
         threeColumnMode: false,
         autoCheckUpdates: false,
         showRepoSidebar: true,
@@ -157,7 +161,7 @@
         hideLogoText: (v) => typeof v === "boolean",
         hideLogoImage: (v) => typeof v === "boolean",
         hideProfile: (v) => typeof v === "boolean",
-        hideEnvironments: (v) => typeof v === "boolean",
+        hideSettings: (v) => typeof v === "boolean",
         threeColumnMode: (v) => typeof v === "boolean",
         autoCheckUpdates: (v) => typeof v === "boolean",
         showRepoSidebar: (v) => typeof v === "boolean",
@@ -283,7 +287,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.46";
+      VERSION = "1.0.47";
     }
   });
 
@@ -630,8 +634,8 @@ body, html {
           const node = document.querySelector('[aria-label*="Profile" i], [data-testid*="profile" i], [class*="profile" i], [class*="avatar" i]');
           if (node) node.style.display = hide ? "none" : "";
         }
-        function toggleEnvironments(hide) {
-          const link = document.querySelector('a[href="/codex/settings/environments"]');
+        function toggleSettingsButton(hide) {
+          const link = document.querySelector('a[href="/codex/settings"]');
           if (link) link.style.display = hide ? "none" : "";
         }
         function makeSidebarInteractive(el, prefix) {
@@ -765,7 +769,7 @@ body, html {
           toggleLogoText(options.hideLogoText);
           toggleLogoImage(options.hideLogoImage);
           toggleProfile(options.hideProfile);
-          toggleEnvironments(options.hideEnvironments);
+          toggleSettingsButton(options.hideSettings);
           toggleRepoSidebar(options.showRepoSidebar);
           toggleVersionSidebar(options.showVersionSidebar);
           if (options.threeColumnMode) {
@@ -875,7 +879,7 @@ body, html {
           document.createElement("br"),
           createCheckbox("gpt-setting-profile", "Hide profile icon"),
           document.createElement("br"),
-          createCheckbox("gpt-setting-environments", "Hide environments button"),
+          createCheckbox("gpt-setting-settings-button", "Hide Settings button"),
           document.createElement("br"),
           createCheckbox("gpt-setting-three-column", "3 column layout")
         ]);
@@ -1297,7 +1301,7 @@ body, html {
           modal.querySelector("#gpt-setting-logo-text").checked = options.hideLogoText;
           modal.querySelector("#gpt-setting-logo-image").checked = options.hideLogoImage;
           modal.querySelector("#gpt-setting-profile").checked = options.hideProfile;
-          modal.querySelector("#gpt-setting-environments").checked = options.hideEnvironments;
+          modal.querySelector("#gpt-setting-settings-button").checked = options.hideSettings;
           modal.querySelector("#gpt-setting-three-column").checked = options.threeColumnMode;
           modal.querySelector("#gpt-setting-auto-updates").checked = options.autoCheckUpdates;
           modal.querySelector("#gpt-setting-disable-history").checked = options.disableHistory;
@@ -1430,8 +1434,8 @@ body, html {
           saveOptions(options);
           applyOptions();
         });
-        modal.querySelector("#gpt-setting-environments").addEventListener("change", (e) => {
-          options.hideEnvironments = e.target.checked;
+        modal.querySelector("#gpt-setting-settings-button").addEventListener("change", (e) => {
+          options.hideSettings = e.target.checked;
           saveOptions(options);
           applyOptions();
         });
@@ -1501,7 +1505,7 @@ body, html {
           toggleLogoText(options.hideLogoText);
           toggleLogoImage(options.hideLogoImage);
           toggleProfile(options.hideProfile);
-          toggleEnvironments(options.hideEnvironments);
+          toggleSettingsButton(options.hideSettings);
           toggleRepoSidebar(options.showRepoSidebar);
           toggleVersionSidebar(options.showVersionSidebar);
         });

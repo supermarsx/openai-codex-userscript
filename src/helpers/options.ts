@@ -9,7 +9,7 @@ export interface Options {
   hideLogoText: boolean;
   hideLogoImage: boolean;
   hideProfile: boolean;
-  hideEnvironments: boolean;
+  hideSettings: boolean;
   threeColumnMode: boolean;
   autoCheckUpdates: boolean;
   showRepoSidebar: boolean;
@@ -40,7 +40,7 @@ export const DEFAULT_OPTIONS: Options = {
   hideLogoText: false,
   hideLogoImage: false,
   hideProfile: false,
-  hideEnvironments: false,
+  hideSettings: false,
   threeColumnMode: false,
   autoCheckUpdates: false,
   showRepoSidebar: true,
@@ -74,7 +74,7 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   hideLogoText: (v): v is Options['hideLogoText'] => typeof v === 'boolean',
   hideLogoImage: (v): v is Options['hideLogoImage'] => typeof v === 'boolean',
   hideProfile: (v): v is Options['hideProfile'] => typeof v === 'boolean',
-  hideEnvironments: (v): v is Options['hideEnvironments'] => typeof v === 'boolean',
+  hideSettings: (v): v is Options['hideSettings'] => typeof v === 'boolean',
   threeColumnMode: (v): v is Options['threeColumnMode'] => typeof v === 'boolean',
   autoCheckUpdates: (v): v is Options['autoCheckUpdates'] => typeof v === 'boolean',
   showRepoSidebar: (v): v is Options['showRepoSidebar'] => typeof v === 'boolean',
@@ -111,6 +111,10 @@ export function loadOptions(): Options {
   const raw = loadJSON<Record<string, unknown>>(STORAGE_KEY, {});
   if ('dark' in raw && !('theme' in raw)) {
     raw.theme = (raw as any).dark ? 'dark' : 'light';
+  }
+  if ('hideEnvironments' in raw && !('hideSettings' in raw)) {
+    (raw as any).hideSettings = (raw as any).hideEnvironments;
+    delete (raw as any).hideEnvironments;
   }
   const opts = sanitizeOptions(raw);
   return { ...DEFAULT_OPTIONS, ...opts };
