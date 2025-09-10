@@ -274,11 +274,37 @@
     }
   });
 
+  // src/helpers/stats.ts
+  function getTaskStats() {
+    const rows = Array.from(document.querySelectorAll(".task-row-container"));
+    const open = rows.filter((row) => {
+      var _a;
+      return ((_a = row.querySelector("button")) == null ? void 0 : _a.textContent.trim()) === "Open";
+    }).length;
+    const merged = rows.filter((row) => {
+      var _a;
+      return ((_a = row.querySelector("button")) == null ? void 0 : _a.textContent.trim()) === "Merged";
+    }).length;
+    const closed = rows.filter((row) => {
+      var _a;
+      return ((_a = row.querySelector("button")) == null ? void 0 : _a.textContent.trim()) === "Closed";
+    }).length;
+    const inProgress = rows.filter((row) => row.querySelector("circle")).length;
+    const fourX = rows.filter(
+      (container) => Array.from(container.querySelectorAll("span")).some((span) => span.textContent.trim() === "4")
+    ).length;
+    return { open, merged, closed, inProgress, fourX };
+  }
+  var init_stats = __esm({
+    "src/helpers/stats.ts"() {
+    }
+  });
+
   // src/version.ts
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.48";
+      VERSION = "1.0.49";
     }
   });
 
@@ -289,6 +315,7 @@
       init_suggestions();
       init_history();
       init_repos();
+      init_stats();
       init_version();
       (function() {
         "use strict";
@@ -532,6 +559,10 @@
 #gpt-history-preview.show { display: flex; }
 #gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-preview button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
+#gpt-stats-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+#gpt-stats-modal.show { display: flex; }
+#gpt-stats-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 300px; }
+#gpt-stats-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
 #gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
@@ -829,6 +860,8 @@ body, html {
         actionBar.appendChild(repoBtn);
         const versionBtn = createActionBtn("gpt-version-btn", "\u{1F516}", "Versions");
         actionBar.appendChild(versionBtn);
+        const statsBtn = createActionBtn("gpt-stats-btn", "\u{1F4CA}", "Stats");
+        actionBar.appendChild(statsBtn);
         const settingsBtn = createActionBtn("gpt-settings-btn", "\u2699\uFE0F", "Settings");
         actionBar.appendChild(settingsBtn);
         const modal = document.createElement("div");
@@ -945,6 +978,64 @@ body, html {
         histContent.appendChild(histActions);
         historyModal.appendChild(histContent);
         document.body.appendChild(historyModal);
+        const statsModal = document.createElement("div");
+        statsModal.id = "gpt-stats-modal";
+        const statsContent = document.createElement("div");
+        statsContent.className = "modal-content";
+        const statsTitle = document.createElement("h2");
+        statsTitle.className = "mb-2 text-lg";
+        statsTitle.textContent = "Current Stats";
+        statsContent.appendChild(statsTitle);
+        const statsList = document.createElement("ul");
+        statsList.id = "gpt-stats-list";
+        statsContent.appendChild(statsList);
+        const statsActions = document.createElement("div");
+        statsActions.className = "mt-2 text-right";
+        statsActions.appendChild(createButton("Close", "btn btn-secondary btn-small", "gpt-stats-close"));
+        statsContent.appendChild(statsActions);
+        statsModal.appendChild(statsContent);
+        document.body.appendChild(statsModal);
+        function renderStats() {
+          const list = statsModal.querySelector("#gpt-stats-list");
+          if (!list) return;
+          const { open, merged, closed, inProgress, fourX } = getTaskStats();
+          list.innerHTML = `
+            <li>Open PRs: ${open}</li>
+            <li>Merged PRs: ${merged}</li>
+            <li>Closed PRs: ${closed}</li>
+            <li>Being Worked On: ${inProgress}</li>
+            <li>4x Run Tasks: ${fourX}</li>
+        `;
+        }
+        const observerConfig = { childList: true, subtree: true, characterData: true };
+        const getStatsTarget = () => {
+          var _a;
+          return ((_a = document.querySelector(".task-row-container")) == null ? void 0 : _a.parentElement) || document.body;
+        };
+        const statsObserver = new MutationObserver(() => {
+          if (statsModal.classList.contains("show")) {
+            statsObserver.disconnect();
+            renderStats();
+            statsObserver.observe(getStatsTarget(), observerConfig);
+          }
+        });
+        observers.push(statsObserver);
+        statsBtn.addEventListener("click", () => {
+          statsObserver.disconnect();
+          renderStats();
+          statsModal.classList.add("show");
+          statsObserver.observe(getStatsTarget(), observerConfig);
+        });
+        statsModal.querySelector("#gpt-stats-close").addEventListener("click", () => {
+          statsModal.classList.remove("show");
+          statsObserver.disconnect();
+        });
+        statsModal.addEventListener("click", (e) => {
+          if (e.target === statsModal) {
+            statsModal.classList.remove("show");
+            statsObserver.disconnect();
+          }
+        });
         const historyPreview = document.createElement("div");
         historyPreview.id = "gpt-history-preview";
         const previewContent = document.createElement("div");
