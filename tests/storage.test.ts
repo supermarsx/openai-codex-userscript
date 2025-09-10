@@ -41,3 +41,14 @@ test("loadJSON migrates from localStorage", async () => {
   const second = await loadJSON("legacy", { c: 0 });
   assert.deepStrictEqual(second, { c: 3 });
 });
+
+test("loadJSON handles localStorage access errors", async () => {
+  const { loadJSON } = loadStorage();
+  const original = localStorage.getItem;
+  localStorage.getItem = () => {
+    throw new Error("denied");
+  };
+  const result = await loadJSON("blocked", { d: 4 });
+  assert.deepStrictEqual(result, { d: 4 });
+  localStorage.getItem = original;
+});
