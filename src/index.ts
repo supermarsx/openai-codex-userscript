@@ -362,7 +362,7 @@ body, html {
     }
 
     function toggleSettingsButton(hide) {
-        const link = document.querySelector('a[href="/codex/settings"]');
+        const link = Array.from(document.querySelectorAll('a[href="/codex/settings/general"]')).filter(el => el.textContent.trim() === "Settings")[0];
         if (link) link.style.display = hide ? 'none' : '';
     }
 
