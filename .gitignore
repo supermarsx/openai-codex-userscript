@@ -1,2 +1,5 @@
 node_modules/
 src/version.ts
+dist/
+openai-codex.user.js
+coverage/

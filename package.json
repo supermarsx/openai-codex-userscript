@@ -1,20 +1,30 @@
 {
   "name": "openai-codex-userscript",
-  "version": "1.0.50",
+  "version": "1.0.54",
   "scripts": {
     "build": "node build.js",
-    "test": "npm run build && node --test -r ts-node/register tests/*.test.ts"
+    "test": "npm run build && node --test -r ts-node/register tests/*.test.ts",
+    "lint": "tsc --noEmit",
+    "format": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "coverage": "c8 npm test"
   },
   "devDependencies": {
+    "c8": "^9.1.0",
     "esbuild": "^0.25.6",
     "jsdom": "^24.0.0",
+    "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "fake-indexeddb": "^5.0.2"
   },
-  "description": "OpenAI Codex Super UI Userscript",
+  "description": "OpenAI Codex Enhancer - enhances user experience inside OpenAI Codex",
   "main": "build.js",
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supermarsx/openai-codex-userscript.git"
+  }
 }
