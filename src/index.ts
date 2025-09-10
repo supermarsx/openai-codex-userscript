@@ -8,7 +8,15 @@ import {
 import { loadHistory, saveHistory, addToHistory } from "./helpers/history";
 import { findPromptInput, setPromptText } from "./helpers/dom";
 import { parseRepoNames } from "./helpers/repos";
-import { getTaskStats } from "./helpers/stats";
+import { renderStats } from "./helpers/stats";
+import {
+  createButton,
+  createActionBtn,
+  createSelect,
+  createCheckbox,
+  makeSidebarInteractive,
+  ensureSidebarInBounds,
+} from "./helpers/ui";
 import { VERSION } from "./version";
 (async function () {
   "use strict";
@@ -18,49 +26,6 @@ import { VERSION } from "./version";
   let dropdownObserver = null;
   let currentPromptDiv = null;
   let currentColDiv = null;
-
-  function createButton(
-    text,
-    className = "btn relative btn-secondary btn-small",
-    id,
-  ) {
-    const btn = document.createElement("button");
-    btn.className = className;
-    btn.textContent = text;
-    if (id) btn.id = id;
-    return btn;
-  }
-
-  function createActionBtn(id, icon, label) {
-    const div = document.createElement("div");
-    div.id = id;
-    div.className = "gpt-action-btn";
-    div.textContent = icon;
-    div.setAttribute("data-label", label);
-    return div;
-  }
-
-  function createSelect(id, options) {
-    const select = document.createElement("select");
-    select.id = id;
-    options.forEach(([value, label]) => {
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = label;
-      select.appendChild(opt);
-    });
-    return select;
-  }
-
-  function createCheckbox(id, labelText) {
-    const label = document.createElement("label");
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = id;
-    label.appendChild(input);
-    label.append(" " + labelText);
-    return label;
-  }
 
   function createSettingGroup(title, children) {
     const group = document.createElement("div");
@@ -408,108 +373,11 @@ body, html {
     if (link) link.style.display = hide ? "none" : "";
   }
 
-  function makeSidebarInteractive(el, prefix) {
-    const header = el.querySelector("div");
-    let dragging = false;
-    let startX = 0,
-      startY = 0,
-      startLeft = 0,
-      startTop = 0;
-
-    function savePos() {
-      const rect = el.getBoundingClientRect();
-      options[prefix + "X"] = rect.left;
-      options[prefix + "Y"] = rect.top;
-      options[prefix + "Width"] = rect.width;
-      options[prefix + "Height"] = rect.height;
-      saveOptions(options);
-    }
-
-    if (header) {
-      header.addEventListener("mousedown", (e) => {
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = el.getBoundingClientRect();
-        startLeft = rect.left;
-        startTop = rect.top;
-        document.addEventListener("mousemove", onDrag);
-        document.addEventListener("mouseup", stopDrag);
-        e.preventDefault();
-      });
-    }
-
-    function onDrag(e) {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      el.style.left = startLeft + dx + "px";
-      el.style.top = startTop + dy + "px";
-    }
-
-    function stopDrag() {
-      if (!dragging) return;
-      dragging = false;
-      document.removeEventListener("mousemove", onDrag);
-      document.removeEventListener("mouseup", stopDrag);
-      savePos();
-    }
-
-    el.addEventListener("mouseup", () => savePos());
-
-    if (typeof ResizeObserver === "function") {
-      const ro = new ResizeObserver(() => {
-        function onResizeEnd() {
-          savePos();
-          el.removeEventListener("mouseup", onResizeEnd);
-          el.removeEventListener("mouseleave", onResizeEnd);
-        }
-        el.addEventListener("mouseup", onResizeEnd);
-        el.addEventListener("mouseleave", onResizeEnd);
-      });
-      ro.observe(el);
-      observers.push(ro);
-    }
-  }
-
-  function ensureSidebarInBounds(el, prefix) {
-    const rect = el.getBoundingClientRect();
-    const margin = 10;
-    let left = rect.left;
-    let top = rect.top;
-    const maxX = window.innerWidth - rect.width - margin;
-    const maxY = window.innerHeight - rect.height - margin;
-    let changed = false;
-    if (left < margin) {
-      left = margin;
-      changed = true;
-    }
-    if (left > maxX) {
-      left = maxX;
-      changed = true;
-    }
-    if (top < margin) {
-      top = margin;
-      changed = true;
-    }
-    if (top > maxY) {
-      top = maxY;
-      changed = true;
-    }
-    if (changed) {
-      el.style.left = left + "px";
-      el.style.top = top + "px";
-      options[prefix + "X"] = left;
-      options[prefix + "Y"] = top;
-      saveOptions(options);
-    }
-  }
-
   function toggleRepoSidebar(show) {
     const el = document.getElementById("gpt-repo-sidebar");
     if (el) {
       el.classList.toggle("hidden", !show);
-      if (show) ensureSidebarInBounds(el, "repoSidebar");
+      if (show) ensureSidebarInBounds(el, "repoSidebar", options, saveOptions);
     }
   }
 
@@ -517,7 +385,8 @@ body, html {
     const el = document.getElementById("gpt-version-sidebar");
     if (el) {
       el.classList.toggle("hidden", !show);
-      if (show) ensureSidebarInBounds(el, "versionSidebar");
+      if (show)
+        ensureSidebarInBounds(el, "versionSidebar", options, saveOptions);
     }
   }
 
@@ -525,7 +394,7 @@ body, html {
     const el = document.getElementById("gpt-stats-sidebar");
     if (el) {
       el.classList.toggle("hidden", !show);
-      if (show) ensureSidebarInBounds(el, "statsSidebar");
+      if (show) ensureSidebarInBounds(el, "statsSidebar", options, saveOptions);
     }
   }
 
@@ -592,7 +461,7 @@ body, html {
         repoEl.style.width = options.repoSidebarWidth + "px";
       if (options.repoSidebarHeight !== null)
         repoEl.style.height = options.repoSidebarHeight + "px";
-      ensureSidebarInBounds(repoEl, "repoSidebar");
+      ensureSidebarInBounds(repoEl, "repoSidebar", options, saveOptions);
     }
     const verEl = document.getElementById("gpt-version-sidebar");
     if (verEl) {
@@ -604,7 +473,7 @@ body, html {
         verEl.style.width = options.versionSidebarWidth + "px";
       if (options.versionSidebarHeight !== null)
         verEl.style.height = options.versionSidebarHeight + "px";
-      ensureSidebarInBounds(verEl, "versionSidebar");
+      ensureSidebarInBounds(verEl, "versionSidebar", options, saveOptions);
     }
     const statsEl = document.getElementById("gpt-stats-sidebar");
     if (statsEl) {
@@ -616,7 +485,7 @@ body, html {
         statsEl.style.width = options.statsSidebarWidth + "px";
       if (options.statsSidebarHeight !== null)
         statsEl.style.height = options.statsSidebarHeight + "px";
-      ensureSidebarInBounds(statsEl, "statsSidebar");
+      ensureSidebarInBounds(statsEl, "statsSidebar", options, saveOptions);
     }
   }
 
@@ -854,7 +723,13 @@ body, html {
   statsList.id = "gpt-stats-list";
   statsSidebar.appendChild(statsList);
   document.body.appendChild(statsSidebar);
-  makeSidebarInteractive(statsSidebar, "statsSidebar");
+  makeSidebarInteractive(
+    statsSidebar,
+    "statsSidebar",
+    options,
+    saveOptions,
+    observers,
+  );
   statsSidebar
     .querySelector("#gpt-stats-hide")
     .addEventListener("click", () => {
@@ -864,17 +739,14 @@ body, html {
       statsObserver.disconnect();
     });
 
-  function renderStats() {
-    const list = statsSidebar.querySelector("#gpt-stats-list");
-    if (!list) return;
-    const { open, merged, closed, inProgress, fourX } = getTaskStats();
-    list.innerHTML = `
-            <li>Open PRs: ${open}</li>
-            <li>Merged PRs: ${merged}</li>
-            <li>Closed PRs: ${closed}</li>
-            <li>Being Worked On: ${inProgress}</li>
-            <li>4x Run Tasks: ${fourX}</li>
-        `;
+  /**
+   * Updates the contents of the stats sidebar.
+   */
+  function updateStats() {
+    const list = statsSidebar.querySelector(
+      "#gpt-stats-list",
+    ) as HTMLElement | null;
+    if (list) renderStats(list);
   }
 
   const observerConfig = {
@@ -889,7 +761,7 @@ body, html {
   const statsObserver = new MutationObserver(() => {
     if (!statsSidebar.classList.contains("hidden")) {
       statsObserver.disconnect();
-      renderStats();
+      updateStats();
       statsObserver.observe(getStatsTarget(), observerConfig);
     }
   });
@@ -902,7 +774,7 @@ body, html {
     saveOptions(options);
     if (show) {
       statsObserver.disconnect();
-      renderStats();
+      updateStats();
       statsObserver.observe(getStatsTarget(), observerConfig);
     } else {
       statsObserver.disconnect();
@@ -966,7 +838,13 @@ body, html {
   repoList.id = "gpt-repo-list";
   repoSidebar.appendChild(repoList);
   document.body.appendChild(repoSidebar);
-  makeSidebarInteractive(repoSidebar, "repoSidebar");
+  makeSidebarInteractive(
+    repoSidebar,
+    "repoSidebar",
+    options,
+    saveOptions,
+    observers,
+  );
   repoSidebar.querySelector("#gpt-repo-hide").addEventListener("click", () => {
     toggleRepoSidebar(false);
     options.showRepoSidebar = false;
@@ -1024,7 +902,13 @@ body, html {
   );
   versionSidebar.appendChild(branchActions);
   document.body.appendChild(versionSidebar);
-  makeSidebarInteractive(versionSidebar, "versionSidebar");
+  makeSidebarInteractive(
+    versionSidebar,
+    "versionSidebar",
+    options,
+    saveOptions,
+    observers,
+  );
   versionSidebar
     .querySelector("#gpt-version-hide")
     .addEventListener("click", () => {
@@ -1633,7 +1517,7 @@ body, html {
   applyOptions();
   if (options.showStatsSidebar) {
     statsObserver.disconnect();
-    renderStats();
+    updateStats();
     statsObserver.observe(getStatsTarget(), observerConfig);
   }
   const now = Date.now();
