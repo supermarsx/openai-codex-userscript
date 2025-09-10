@@ -6,6 +6,7 @@ import { findPromptInput, setPromptText } from "./helpers/dom";
 import { parseRepoNames } from "./helpers/repos";
 import { getTaskStats } from "./helpers/stats";
 import { VERSION } from "./version";
+import { loadJSON, saveJSON } from "./lib/storage";
 (function () {
 
     'use strict';
@@ -15,6 +16,8 @@ import { VERSION } from "./version";
     let dropdownObserver = null;
     let currentPromptDiv = null;
     let currentColDiv = null;
+    const LAST_UPDATE_CHECK_KEY = 'gpt-last-update-check';
+    let toastContainer = null;
 
     function createButton(text, className = 'btn relative btn-secondary btn-small', id) {
         const btn = document.createElement('button');
@@ -63,6 +66,19 @@ import { VERSION } from "./version";
         group.appendChild(h3);
         children.forEach(c => group.appendChild(c));
         return group;
+    }
+
+    function showToast(message, onClick) {
+        const toast = document.createElement('div');
+        toast.className = 'gpt-toast';
+        toast.textContent = message;
+        if (onClick) {
+            toast.addEventListener('click', () => { onClick(); toast.remove(); });
+        } else {
+            toast.addEventListener('click', () => toast.remove());
+        }
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 10000);
     }
 
     const THEME_TOKENS = {
@@ -258,15 +274,14 @@ import { VERSION } from "./version";
 #gpt-history-preview.show { display: flex; }
 #gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-preview button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-stats-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
-#gpt-stats-modal.show { display: flex; }
-#gpt-stats-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 300px; }
-#gpt-stats-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
+#gpt-repo-sidebar, #gpt-version-sidebar, #gpt-stats-window { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
-#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
-#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
+#gpt-stats-window { inset-inline-start: 10px; }
+#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden, #gpt-stats-window.hidden { display: none; }
+#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child, #gpt-stats-window > div:first-child { cursor: move; }
+#gpt-toast-container { position: fixed; left: 16px; bottom: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.gpt-toast { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); padding: 0.5rem 1rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; }
 `;
     document.head.appendChild(settingsStyle);
 
@@ -505,6 +520,7 @@ body, html {
         toggleSettingsButton(options.hideSettings);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
+        toggleStatsWindow(options.showStatsWindow);
 
         if (options.threeColumnMode) {
             if (!document.head.contains(columnStyle)) document.head.appendChild(columnStyle);
@@ -528,9 +544,17 @@ body, html {
             if (options.versionSidebarHeight !== null) verEl.style.height = options.versionSidebarHeight + 'px';
             ensureSidebarInBounds(verEl, 'versionSidebar');
         }
+        const statsEl = document.getElementById('gpt-stats-window');
+        if (statsEl) {
+            if (options.statsWindowX !== null) statsEl.style.left = options.statsWindowX + 'px';
+            if (options.statsWindowY !== null) statsEl.style.top = options.statsWindowY + 'px';
+            if (options.statsWindowWidth !== null) statsEl.style.width = options.statsWindowWidth + 'px';
+            if (options.statsWindowHeight !== null) statsEl.style.height = options.statsWindowHeight + 'px';
+            ensureSidebarInBounds(statsEl, 'statsWindow');
+        }
     }
 
-    async function checkForUpdates() {
+    async function checkForUpdates(manual = false) {
         const url = 'https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js';
         try {
             const txt = await new Promise((resolve, reject) => {
@@ -554,13 +578,14 @@ body, html {
             if (m) {
                 const latest = m[1];
                 if (latest !== SCRIPT_VERSION) {
-                    if (window.confirm(`Update available (v${latest}). Open download page?`)) {
+                    showToast(`Update available (v${latest}). Click to download.`, () => {
                         window.open('https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js', '_blank');
-                    }
-                } else {
-                    window.alert('No updates found.');
+                    });
+                } else if (manual) {
+                    showToast('No updates found.');
                 }
             }
+            saveJSON(LAST_UPDATE_CHECK_KEY, Date.now());
         } catch (e) {
             console.error('Failed to check for updates', e);
         }
@@ -569,6 +594,9 @@ body, html {
     const actionBar = document.createElement('div');
     actionBar.id = 'gpt-action-bar';
     document.body.appendChild(actionBar);
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'gpt-toast-container';
+    document.body.appendChild(toastContainer);
 
     const historyBtn = createActionBtn('gpt-history-btn', '📜', 'History');
     actionBar.appendChild(historyBtn);
@@ -637,7 +665,7 @@ body, html {
     ]);
     modalContent.appendChild(branchesGroup);
     const otherGroup = createSettingGroup('Other', [
-        createCheckbox('gpt-setting-auto-updates', 'Auto-check for updates'), document.createElement('br'),
+        createCheckbox('gpt-setting-auto-updates', 'Check for updates daily'), document.createElement('br'),
         createCheckbox('gpt-setting-disable-history', 'Disable prompt history'), document.createElement('br'),
         (() => {
             const l = document.createElement('label');
@@ -688,26 +716,24 @@ body, html {
     historyModal.appendChild(histContent);
     document.body.appendChild(historyModal);
 
-    const statsModal = document.createElement('div');
-    statsModal.id = 'gpt-stats-modal';
-    const statsContent = document.createElement('div');
-    statsContent.className = 'modal-content';
-    const statsTitle = document.createElement('h2');
-    statsTitle.className = 'mb-2 text-lg';
+    const statsWindow = document.createElement('div');
+    statsWindow.id = 'gpt-stats-window';
+    const statsHeader = document.createElement('div');
+    statsHeader.className = 'flex justify-between items-center';
+    const statsTitle = document.createElement('h3');
+    statsTitle.className = 'm-0';
     statsTitle.textContent = 'Current Stats';
-    statsContent.appendChild(statsTitle);
+    statsHeader.appendChild(statsTitle);
+    statsHeader.appendChild(createButton('×', 'btn relative btn-secondary btn-small', 'gpt-stats-hide'));
+    statsWindow.appendChild(statsHeader);
     const statsList = document.createElement('ul');
     statsList.id = 'gpt-stats-list';
-    statsContent.appendChild(statsList);
-    const statsActions = document.createElement('div');
-    statsActions.className = 'mt-2 text-right';
-    statsActions.appendChild(createButton('Close', 'btn btn-secondary btn-small', 'gpt-stats-close'));
-    statsContent.appendChild(statsActions);
-    statsModal.appendChild(statsContent);
-    document.body.appendChild(statsModal);
+    statsWindow.appendChild(statsList);
+    document.body.appendChild(statsWindow);
+    makeSidebarInteractive(statsWindow, 'statsWindow');
 
     function renderStats() {
-        const list = statsModal.querySelector('#gpt-stats-list');
+        const list = statsWindow.querySelector('#gpt-stats-list');
         if (!list) return;
         const { open, merged, closed, inProgress, fourX } = getTaskStats();
         list.innerHTML = `
@@ -723,30 +749,33 @@ body, html {
     const getStatsTarget = () => document.querySelector('.task-row-container')?.parentElement || document.body;
 
     const statsObserver = new MutationObserver(() => {
-        if (statsModal.classList.contains('show')) {
-            statsObserver.disconnect();
+        if (!statsWindow.classList.contains('hidden')) {
             renderStats();
-            statsObserver.observe(getStatsTarget(), observerConfig);
         }
     });
     observers.push(statsObserver);
+    statsObserver.observe(getStatsTarget(), observerConfig);
+
+    function toggleStatsWindow(show) {
+        const el = statsWindow;
+        el.classList.toggle('hidden', !show);
+        if (show) {
+            renderStats();
+            ensureSidebarInBounds(el, 'statsWindow');
+        }
+    }
 
     statsBtn.addEventListener('click', () => {
-        statsObserver.disconnect();
-        renderStats();
-        statsModal.classList.add('show');
-        statsObserver.observe(getStatsTarget(), observerConfig);
+        const show = statsWindow.classList.contains('hidden');
+        toggleStatsWindow(show);
+        options.showStatsWindow = show;
+        saveOptions(options);
     });
 
-    statsModal.querySelector('#gpt-stats-close').addEventListener('click', () => {
-        statsModal.classList.remove('show');
-        statsObserver.disconnect();
-    });
-    statsModal.addEventListener('click', (e) => {
-        if (e.target === statsModal) {
-            statsModal.classList.remove('show');
-            statsObserver.disconnect();
-        }
+    statsWindow.querySelector('#gpt-stats-hide').addEventListener('click', () => {
+        toggleStatsWindow(false);
+        options.showStatsWindow = false;
+        saveOptions(options);
     });
 
     const historyPreview = document.createElement('div');
@@ -1226,7 +1255,7 @@ body, html {
     modal.querySelector('#gpt-setting-clear-open').addEventListener('change', (e) => { options.clearOpenBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-auto-archive-merged').addEventListener('change', (e) => { options.autoArchiveMerged = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-auto-archive-closed').addEventListener('change', (e) => { options.autoArchiveClosed = e.target.checked; saveOptions(options); });
-    modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates());
+    modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates(true));
     modal.querySelector('#gpt-reset-defaults').addEventListener('click', () => {
         options = { ...DEFAULT_OPTIONS };
         saveOptions(options);
@@ -1236,6 +1265,7 @@ body, html {
     modal.querySelector('#gpt-reset-windows').addEventListener('click', () => {
         options.repoSidebarX = options.repoSidebarY = options.repoSidebarWidth = options.repoSidebarHeight = null;
         options.versionSidebarX = options.versionSidebarY = options.versionSidebarWidth = options.versionSidebarHeight = null;
+        options.statsWindowX = options.statsWindowY = options.statsWindowWidth = options.statsWindowHeight = null;
         saveOptions(options);
         applyOptions();
     });
@@ -1255,7 +1285,10 @@ body, html {
 
     applyOptions();
     if (options.autoCheckUpdates) {
-        checkForUpdates();
+        const last = loadJSON<number>(LAST_UPDATE_CHECK_KEY, 0);
+        if (Date.now() - last > 86400000) {
+            checkForUpdates();
+        }
     }
 
     // Automatically archive tasks based on status changes

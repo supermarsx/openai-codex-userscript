@@ -126,6 +126,7 @@
         autoCheckUpdates: false,
         showRepoSidebar: true,
         showVersionSidebar: true,
+        showStatsWindow: false,
         clearClosedBranches: false,
         clearMergedBranches: false,
         clearOpenBranches: false,
@@ -140,7 +141,11 @@
         versionSidebarX: null,
         versionSidebarY: null,
         versionSidebarWidth: null,
-        versionSidebarHeight: null
+        versionSidebarHeight: null,
+        statsWindowX: null,
+        statsWindowY: null,
+        statsWindowWidth: null,
+        statsWindowHeight: null
       };
       STORAGE_KEY = "gpt-script-options";
       OPTION_VALIDATORS = {
@@ -157,6 +162,7 @@
         autoCheckUpdates: (v) => typeof v === "boolean",
         showRepoSidebar: (v) => typeof v === "boolean",
         showVersionSidebar: (v) => typeof v === "boolean",
+        showStatsWindow: (v) => typeof v === "boolean",
         clearClosedBranches: (v) => typeof v === "boolean",
         clearMergedBranches: (v) => typeof v === "boolean",
         clearOpenBranches: (v) => typeof v === "boolean",
@@ -171,7 +177,11 @@
         versionSidebarX: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
         versionSidebarY: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
         versionSidebarWidth: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
-        versionSidebarHeight: (v) => typeof v === "number" && Number.isFinite(v) || v === null
+        versionSidebarHeight: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        statsWindowX: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        statsWindowY: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        statsWindowWidth: (v) => typeof v === "number" && Number.isFinite(v) || v === null,
+        statsWindowHeight: (v) => typeof v === "number" && Number.isFinite(v) || v === null
       };
     }
   });
@@ -289,7 +299,9 @@
       var _a;
       return ((_a = row.querySelector("button")) == null ? void 0 : _a.textContent.trim()) === "Closed";
     }).length;
-    const inProgress = rows.filter((row) => row.querySelector("circle")).length;
+    const inProgress = rows.filter(
+      (row) => row.querySelector("circle") || row.querySelector('[aria-label*="Cancel task"]')
+    ).length;
     const fourX = rows.filter(
       (container) => Array.from(container.querySelectorAll("span")).some((span) => span.textContent.trim() === "4")
     ).length;
@@ -304,7 +316,7 @@
   var VERSION;
   var init_version = __esm({
     "src/version.ts"() {
-      VERSION = "1.0.49";
+      VERSION = "1.0.50";
     }
   });
 
@@ -317,6 +329,7 @@
       init_repos();
       init_stats();
       init_version();
+      init_storage();
       (function() {
         "use strict";
         const SCRIPT_VERSION = VERSION;
@@ -325,6 +338,8 @@
         let dropdownObserver = null;
         let currentPromptDiv = null;
         let currentColDiv = null;
+        const LAST_UPDATE_CHECK_KEY = "gpt-last-update-check";
+        let toastContainer = null;
         function createButton(text, className = "btn relative btn-secondary btn-small", id) {
           const btn = document.createElement("button");
           btn.className = className;
@@ -368,6 +383,21 @@
           group.appendChild(h3);
           children.forEach((c) => group.appendChild(c));
           return group;
+        }
+        function showToast(message, onClick) {
+          const toast = document.createElement("div");
+          toast.className = "gpt-toast";
+          toast.textContent = message;
+          if (onClick) {
+            toast.addEventListener("click", () => {
+              onClick();
+              toast.remove();
+            });
+          } else {
+            toast.addEventListener("click", () => toast.remove());
+          }
+          toastContainer.appendChild(toast);
+          setTimeout(() => toast.remove(), 1e4);
         }
         const THEME_TOKENS = {
           light: {
@@ -559,15 +589,14 @@
 #gpt-history-preview.show { display: flex; }
 #gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-preview button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-stats-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
-#gpt-stats-modal.show { display: flex; }
-#gpt-stats-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 300px; }
-#gpt-stats-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
+#gpt-repo-sidebar, #gpt-version-sidebar, #gpt-stats-window { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
-#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
-#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
+#gpt-stats-window { inset-inline-start: 10px; }
+#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden, #gpt-stats-window.hidden { display: none; }
+#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child, #gpt-stats-window > div:first-child { cursor: move; }
+#gpt-toast-container { position: fixed; left: 16px; bottom: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.gpt-toast { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); padding: 0.5rem 1rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; }
 `;
         document.head.appendChild(settingsStyle);
         const fallbackStyle = document.createElement("style");
@@ -794,6 +823,7 @@ body, html {
           toggleSettingsButton(options.hideSettings);
           toggleRepoSidebar(options.showRepoSidebar);
           toggleVersionSidebar(options.showVersionSidebar);
+          toggleStatsWindow(options.showStatsWindow);
           if (options.threeColumnMode) {
             if (!document.head.contains(columnStyle)) document.head.appendChild(columnStyle);
           } else {
@@ -815,8 +845,16 @@ body, html {
             if (options.versionSidebarHeight !== null) verEl.style.height = options.versionSidebarHeight + "px";
             ensureSidebarInBounds(verEl, "versionSidebar");
           }
+          const statsEl = document.getElementById("gpt-stats-window");
+          if (statsEl) {
+            if (options.statsWindowX !== null) statsEl.style.left = options.statsWindowX + "px";
+            if (options.statsWindowY !== null) statsEl.style.top = options.statsWindowY + "px";
+            if (options.statsWindowWidth !== null) statsEl.style.width = options.statsWindowWidth + "px";
+            if (options.statsWindowHeight !== null) statsEl.style.height = options.statsWindowHeight + "px";
+            ensureSidebarInBounds(statsEl, "statsWindow");
+          }
         }
-        async function checkForUpdates() {
+        async function checkForUpdates(manual = false) {
           const url = "https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js";
           try {
             const txt = await new Promise((resolve, reject) => {
@@ -840,13 +878,14 @@ body, html {
             if (m) {
               const latest = m[1];
               if (latest !== SCRIPT_VERSION) {
-                if (window.confirm(`Update available (v${latest}). Open download page?`)) {
+                showToast(`Update available (v${latest}). Click to download.`, () => {
                   window.open("https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js", "_blank");
-                }
-              } else {
-                window.alert("No updates found.");
+                });
+              } else if (manual) {
+                showToast("No updates found.");
               }
             }
+            saveJSON(LAST_UPDATE_CHECK_KEY, Date.now());
           } catch (e) {
             console.error("Failed to check for updates", e);
           }
@@ -854,6 +893,9 @@ body, html {
         const actionBar = document.createElement("div");
         actionBar.id = "gpt-action-bar";
         document.body.appendChild(actionBar);
+        toastContainer = document.createElement("div");
+        toastContainer.id = "gpt-toast-container";
+        document.body.appendChild(toastContainer);
         const historyBtn = createActionBtn("gpt-history-btn", "\u{1F4DC}", "History");
         actionBar.appendChild(historyBtn);
         const repoBtn = createActionBtn("gpt-repo-btn", "\u{1F4C1}", "Repos");
@@ -927,7 +969,7 @@ body, html {
         ]);
         modalContent.appendChild(branchesGroup);
         const otherGroup = createSettingGroup("Other", [
-          createCheckbox("gpt-setting-auto-updates", "Auto-check for updates"),
+          createCheckbox("gpt-setting-auto-updates", "Check for updates daily"),
           document.createElement("br"),
           createCheckbox("gpt-setting-disable-history", "Disable prompt history"),
           document.createElement("br"),
@@ -978,25 +1020,23 @@ body, html {
         histContent.appendChild(histActions);
         historyModal.appendChild(histContent);
         document.body.appendChild(historyModal);
-        const statsModal = document.createElement("div");
-        statsModal.id = "gpt-stats-modal";
-        const statsContent = document.createElement("div");
-        statsContent.className = "modal-content";
-        const statsTitle = document.createElement("h2");
-        statsTitle.className = "mb-2 text-lg";
+        const statsWindow = document.createElement("div");
+        statsWindow.id = "gpt-stats-window";
+        const statsHeader = document.createElement("div");
+        statsHeader.className = "flex justify-between items-center";
+        const statsTitle = document.createElement("h3");
+        statsTitle.className = "m-0";
         statsTitle.textContent = "Current Stats";
-        statsContent.appendChild(statsTitle);
+        statsHeader.appendChild(statsTitle);
+        statsHeader.appendChild(createButton("\xD7", "btn relative btn-secondary btn-small", "gpt-stats-hide"));
+        statsWindow.appendChild(statsHeader);
         const statsList = document.createElement("ul");
         statsList.id = "gpt-stats-list";
-        statsContent.appendChild(statsList);
-        const statsActions = document.createElement("div");
-        statsActions.className = "mt-2 text-right";
-        statsActions.appendChild(createButton("Close", "btn btn-secondary btn-small", "gpt-stats-close"));
-        statsContent.appendChild(statsActions);
-        statsModal.appendChild(statsContent);
-        document.body.appendChild(statsModal);
+        statsWindow.appendChild(statsList);
+        document.body.appendChild(statsWindow);
+        makeSidebarInteractive(statsWindow, "statsWindow");
         function renderStats() {
-          const list = statsModal.querySelector("#gpt-stats-list");
+          const list = statsWindow.querySelector("#gpt-stats-list");
           if (!list) return;
           const { open, merged, closed, inProgress, fourX } = getTaskStats();
           list.innerHTML = `
@@ -1013,28 +1053,30 @@ body, html {
           return ((_a = document.querySelector(".task-row-container")) == null ? void 0 : _a.parentElement) || document.body;
         };
         const statsObserver = new MutationObserver(() => {
-          if (statsModal.classList.contains("show")) {
-            statsObserver.disconnect();
+          if (!statsWindow.classList.contains("hidden")) {
             renderStats();
-            statsObserver.observe(getStatsTarget(), observerConfig);
           }
         });
         observers.push(statsObserver);
-        statsBtn.addEventListener("click", () => {
-          statsObserver.disconnect();
-          renderStats();
-          statsModal.classList.add("show");
-          statsObserver.observe(getStatsTarget(), observerConfig);
-        });
-        statsModal.querySelector("#gpt-stats-close").addEventListener("click", () => {
-          statsModal.classList.remove("show");
-          statsObserver.disconnect();
-        });
-        statsModal.addEventListener("click", (e) => {
-          if (e.target === statsModal) {
-            statsModal.classList.remove("show");
-            statsObserver.disconnect();
+        statsObserver.observe(getStatsTarget(), observerConfig);
+        function toggleStatsWindow(show) {
+          const el = statsWindow;
+          el.classList.toggle("hidden", !show);
+          if (show) {
+            renderStats();
+            ensureSidebarInBounds(el, "statsWindow");
           }
+        }
+        statsBtn.addEventListener("click", () => {
+          const show = statsWindow.classList.contains("hidden");
+          toggleStatsWindow(show);
+          options.showStatsWindow = show;
+          saveOptions(options);
+        });
+        statsWindow.querySelector("#gpt-stats-hide").addEventListener("click", () => {
+          toggleStatsWindow(false);
+          options.showStatsWindow = false;
+          saveOptions(options);
         });
         const historyPreview = document.createElement("div");
         historyPreview.id = "gpt-history-preview";
@@ -1568,7 +1610,7 @@ body, html {
           options.autoArchiveClosed = e.target.checked;
           saveOptions(options);
         });
-        modal.querySelector("#gpt-update-check").addEventListener("click", () => checkForUpdates());
+        modal.querySelector("#gpt-update-check").addEventListener("click", () => checkForUpdates(true));
         modal.querySelector("#gpt-reset-defaults").addEventListener("click", () => {
           options = __spreadValues({}, DEFAULT_OPTIONS);
           saveOptions(options);
@@ -1578,6 +1620,7 @@ body, html {
         modal.querySelector("#gpt-reset-windows").addEventListener("click", () => {
           options.repoSidebarX = options.repoSidebarY = options.repoSidebarWidth = options.repoSidebarHeight = null;
           options.versionSidebarX = options.versionSidebarY = options.versionSidebarWidth = options.versionSidebarHeight = null;
+          options.statsWindowX = options.statsWindowY = options.statsWindowWidth = options.statsWindowHeight = null;
           saveOptions(options);
           applyOptions();
         });
@@ -1595,7 +1638,10 @@ body, html {
         pageObserver.observe(document.body, { childList: true, subtree: true });
         applyOptions();
         if (options.autoCheckUpdates) {
-          checkForUpdates();
+          const last = loadJSON(LAST_UPDATE_CHECK_KEY, 0);
+          if (Date.now() - last > 864e5) {
+            checkForUpdates();
+          }
         }
         function findArchiveButton() {
           return document.querySelector('[data-testid="archive-task"]') || Array.from(document.querySelectorAll('button,[role="button"]')).find((b) => {

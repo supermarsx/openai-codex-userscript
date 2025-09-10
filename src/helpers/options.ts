@@ -14,6 +14,7 @@ export interface Options {
   autoCheckUpdates: boolean;
   showRepoSidebar: boolean;
   showVersionSidebar: boolean;
+  showStatsWindow: boolean;
   clearClosedBranches: boolean;
   clearMergedBranches: boolean;
   clearOpenBranches: boolean;
@@ -29,6 +30,10 @@ export interface Options {
   versionSidebarY: number | null;
   versionSidebarWidth: number | null;
   versionSidebarHeight: number | null;
+  statsWindowX: number | null;
+  statsWindowY: number | null;
+  statsWindowWidth: number | null;
+  statsWindowHeight: number | null;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -45,6 +50,7 @@ export const DEFAULT_OPTIONS: Options = {
   autoCheckUpdates: false,
   showRepoSidebar: true,
   showVersionSidebar: true,
+  showStatsWindow: false,
   clearClosedBranches: false,
   clearMergedBranches: false,
   clearOpenBranches: false,
@@ -60,6 +66,10 @@ export const DEFAULT_OPTIONS: Options = {
   versionSidebarY: null,
   versionSidebarWidth: null,
   versionSidebarHeight: null,
+  statsWindowX: null,
+  statsWindowY: null,
+  statsWindowWidth: null,
+  statsWindowHeight: null,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
@@ -79,6 +89,7 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   autoCheckUpdates: (v): v is Options['autoCheckUpdates'] => typeof v === 'boolean',
   showRepoSidebar: (v): v is Options['showRepoSidebar'] => typeof v === 'boolean',
   showVersionSidebar: (v): v is Options['showVersionSidebar'] => typeof v === 'boolean',
+  showStatsWindow: (v): v is Options['showStatsWindow'] => typeof v === 'boolean',
   clearClosedBranches: (v): v is Options['clearClosedBranches'] => typeof v === 'boolean',
   clearMergedBranches: (v): v is Options['clearMergedBranches'] => typeof v === 'boolean',
   clearOpenBranches: (v): v is Options['clearOpenBranches'] => typeof v === 'boolean',
@@ -94,6 +105,10 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   versionSidebarY: (v): v is Options['versionSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   versionSidebarWidth: (v): v is Options['versionSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   versionSidebarHeight: (v): v is Options['versionSidebarHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsWindowX: (v): v is Options['statsWindowX'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsWindowY: (v): v is Options['statsWindowY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsWindowWidth: (v): v is Options['statsWindowWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsWindowHeight: (v): v is Options['statsWindowHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
 };
 
 function sanitizeOptions(raw: Record<string, unknown>): Partial<Options> {
