@@ -65,6 +65,23 @@ import { VERSION } from "./version";
         return group;
     }
 
+    function showToast(msg, duration = 5000) {
+        let container = document.getElementById('gpt-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'gpt-toast-container';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'gpt-toast';
+        toast.innerHTML = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+            if (!container?.childElementCount) container.remove();
+        }, duration);
+    }
+
     const THEME_TOKENS = {
         light: {
             '--brand-purple': '#824dff',
@@ -258,15 +275,14 @@ import { VERSION } from "./version";
 #gpt-history-preview.show { display: flex; }
 #gpt-history-preview .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; }
 #gpt-history-preview button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-stats-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
-#gpt-stats-modal.show { display: flex; }
-#gpt-stats-modal .modal-content { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); border-radius: 0.5rem; padding: 1rem; max-width: 90%; width: 300px; }
-#gpt-stats-modal button { border: 1px solid var(--ring); padding: 2px 6px; border-radius: 4px; }
-#gpt-repo-sidebar, #gpt-version-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
+#gpt-repo-sidebar, #gpt-version-sidebar, #gpt-stats-sidebar { position: fixed; inset-block-start: 10%; max-height: 80vh; width: 180px; background: var(--background); color: var(--foreground); border: 1px solid var(--ring); overflow-y: auto; z-index: 999; padding: 0.5rem; border-radius: 0.25rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); resize: both; }
 #gpt-repo-sidebar { inset-inline-start: 10px; }
 #gpt-version-sidebar { inset-inline-end: 10px; }
-#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden { display: none; }
-#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child { cursor: move; }
+#gpt-stats-sidebar { inset-inline-start: calc(50% - 90px); }
+#gpt-repo-sidebar.hidden, #gpt-version-sidebar.hidden, #gpt-stats-sidebar.hidden { display: none; }
+#gpt-repo-sidebar > div:first-child, #gpt-version-sidebar > div:first-child, #gpt-stats-sidebar > div:first-child { cursor: move; }
+#gpt-toast-container { position: fixed; left: 16px; bottom: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+#gpt-toast-container .gpt-toast { background: var(--background); color: var(--foreground); border: 1px solid var(--ring); padding: 0.5rem 0.75rem; border-radius: 0.25rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 `;
     document.head.appendChild(settingsStyle);
 
@@ -471,6 +487,15 @@ body, html {
 
     }
 
+    function toggleStatsSidebar(show) {
+        const el = document.getElementById('gpt-stats-sidebar');
+        if (el) {
+            el.classList.toggle('hidden', !show);
+            if (show) ensureSidebarInBounds(el, 'statsSidebar');
+        }
+
+    }
+
     function applyOptions() {
         const root = document.documentElement;
         root.classList.remove('userscript-force-light', 'userscript-force-dark', 'userscript-force-oled', 'light', 'dark');
@@ -505,6 +530,8 @@ body, html {
         toggleSettingsButton(options.hideSettings);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
+        toggleStatsSidebar(options.showStatsSidebar);
+        toggleStatsSidebar(options.showStatsSidebar);
 
         if (options.threeColumnMode) {
             if (!document.head.contains(columnStyle)) document.head.appendChild(columnStyle);
@@ -528,9 +555,17 @@ body, html {
             if (options.versionSidebarHeight !== null) verEl.style.height = options.versionSidebarHeight + 'px';
             ensureSidebarInBounds(verEl, 'versionSidebar');
         }
+        const statsEl = document.getElementById('gpt-stats-sidebar');
+        if (statsEl) {
+            if (options.statsSidebarX !== null) statsEl.style.left = options.statsSidebarX + 'px';
+            if (options.statsSidebarY !== null) statsEl.style.top = options.statsSidebarY + 'px';
+            if (options.statsSidebarWidth !== null) statsEl.style.width = options.statsSidebarWidth + 'px';
+            if (options.statsSidebarHeight !== null) statsEl.style.height = options.statsSidebarHeight + 'px';
+            ensureSidebarInBounds(statsEl, 'statsSidebar');
+        }
     }
 
-    async function checkForUpdates() {
+    async function checkForUpdates(silent = false) {
         const url = 'https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js';
         try {
             const txt = await new Promise((resolve, reject) => {
@@ -554,11 +589,9 @@ body, html {
             if (m) {
                 const latest = m[1];
                 if (latest !== SCRIPT_VERSION) {
-                    if (window.confirm(`Update available (v${latest}). Open download page?`)) {
-                        window.open('https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js', '_blank');
-                    }
-                } else {
-                    window.alert('No updates found.');
+                    showToast(`Update available (v${latest}). <a href="https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js" target="_blank">Download</a>`);
+                } else if (!silent) {
+                    showToast('No updates found.');
                 }
             }
         } catch (e) {
@@ -625,7 +658,8 @@ body, html {
     modalContent.appendChild(interfaceGroup);
     const sidebarsGroup = createSettingGroup('Sidebars', [
         createCheckbox('gpt-setting-show-repos', 'Show repo sidebar'), document.createElement('br'),
-        createCheckbox('gpt-setting-show-versions', 'Show version sidebar')
+        createCheckbox('gpt-setting-show-versions', 'Show version sidebar'), document.createElement('br'),
+        createCheckbox('gpt-setting-show-stats', 'Show stats sidebar')
     ]);
     modalContent.appendChild(sidebarsGroup);
     const branchesGroup = createSettingGroup('Branches', [
@@ -637,7 +671,7 @@ body, html {
     ]);
     modalContent.appendChild(branchesGroup);
     const otherGroup = createSettingGroup('Other', [
-        createCheckbox('gpt-setting-auto-updates', 'Auto-check for updates'), document.createElement('br'),
+        createCheckbox('gpt-setting-auto-updates', 'Check for updates daily'), document.createElement('br'),
         createCheckbox('gpt-setting-disable-history', 'Disable prompt history'), document.createElement('br'),
         (() => {
             const l = document.createElement('label');
@@ -688,26 +722,30 @@ body, html {
     historyModal.appendChild(histContent);
     document.body.appendChild(historyModal);
 
-    const statsModal = document.createElement('div');
-    statsModal.id = 'gpt-stats-modal';
-    const statsContent = document.createElement('div');
-    statsContent.className = 'modal-content';
-    const statsTitle = document.createElement('h2');
-    statsTitle.className = 'mb-2 text-lg';
+    const statsSidebar = document.createElement('div');
+    statsSidebar.id = 'gpt-stats-sidebar';
+    const statsHeader = document.createElement('div');
+    statsHeader.className = 'flex justify-between items-center';
+    const statsTitle = document.createElement('h3');
+    statsTitle.className = 'm-0';
     statsTitle.textContent = 'Current Stats';
-    statsContent.appendChild(statsTitle);
+    statsHeader.appendChild(statsTitle);
+    statsHeader.appendChild(createButton('×', 'btn relative btn-secondary btn-small', 'gpt-stats-hide'));
+    statsSidebar.appendChild(statsHeader);
     const statsList = document.createElement('ul');
     statsList.id = 'gpt-stats-list';
-    statsContent.appendChild(statsList);
-    const statsActions = document.createElement('div');
-    statsActions.className = 'mt-2 text-right';
-    statsActions.appendChild(createButton('Close', 'btn btn-secondary btn-small', 'gpt-stats-close'));
-    statsContent.appendChild(statsActions);
-    statsModal.appendChild(statsContent);
-    document.body.appendChild(statsModal);
+    statsSidebar.appendChild(statsList);
+    document.body.appendChild(statsSidebar);
+    makeSidebarInteractive(statsSidebar, 'statsSidebar');
+    statsSidebar.querySelector('#gpt-stats-hide').addEventListener('click', () => {
+        toggleStatsSidebar(false);
+        options.showStatsSidebar = false;
+        saveOptions(options);
+        statsObserver.disconnect();
+    });
 
     function renderStats() {
-        const list = statsModal.querySelector('#gpt-stats-list');
+        const list = statsSidebar.querySelector('#gpt-stats-list');
         if (!list) return;
         const { open, merged, closed, inProgress, fourX } = getTaskStats();
         list.innerHTML = `
@@ -723,7 +761,7 @@ body, html {
     const getStatsTarget = () => document.querySelector('.task-row-container')?.parentElement || document.body;
 
     const statsObserver = new MutationObserver(() => {
-        if (statsModal.classList.contains('show')) {
+        if (!statsSidebar.classList.contains('hidden')) {
             statsObserver.disconnect();
             renderStats();
             statsObserver.observe(getStatsTarget(), observerConfig);
@@ -732,19 +770,15 @@ body, html {
     observers.push(statsObserver);
 
     statsBtn.addEventListener('click', () => {
-        statsObserver.disconnect();
-        renderStats();
-        statsModal.classList.add('show');
-        statsObserver.observe(getStatsTarget(), observerConfig);
-    });
-
-    statsModal.querySelector('#gpt-stats-close').addEventListener('click', () => {
-        statsModal.classList.remove('show');
-        statsObserver.disconnect();
-    });
-    statsModal.addEventListener('click', (e) => {
-        if (e.target === statsModal) {
-            statsModal.classList.remove('show');
+        const show = statsSidebar.classList.contains('hidden');
+        toggleStatsSidebar(show);
+        options.showStatsSidebar = show;
+        saveOptions(options);
+        if (show) {
+            statsObserver.disconnect();
+            renderStats();
+            statsObserver.observe(getStatsTarget(), observerConfig);
+        } else {
             statsObserver.disconnect();
         }
     });
@@ -1120,6 +1154,7 @@ body, html {
         modal.querySelector('#gpt-setting-history-limit').value = String(options.historyLimit);
         modal.querySelector('#gpt-setting-show-repos').checked = options.showRepoSidebar;
         modal.querySelector('#gpt-setting-show-versions').checked = options.showVersionSidebar;
+        modal.querySelector('#gpt-setting-show-stats').checked = options.showStatsSidebar;
         modal.querySelector('#gpt-setting-clear-closed').checked = options.clearClosedBranches;
         modal.querySelector('#gpt-setting-clear-merged').checked = options.clearMergedBranches;
         modal.querySelector('#gpt-setting-clear-open').checked = options.clearOpenBranches;
@@ -1221,12 +1256,17 @@ body, html {
     modal.querySelector('#gpt-setting-history-limit').addEventListener('change', (e) => { options.historyLimit = parseInt(e.target.value, 10) || 1; saveOptions(options); });
     modal.querySelector('#gpt-setting-show-repos').addEventListener('change', (e) => { options.showRepoSidebar = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-show-versions').addEventListener('change', (e) => { options.showVersionSidebar = e.target.checked; saveOptions(options); applyOptions(); });
+    modal.querySelector('#gpt-setting-show-stats').addEventListener('change', (e) => { options.showStatsSidebar = e.target.checked; saveOptions(options); applyOptions(); });
     modal.querySelector('#gpt-setting-clear-closed').addEventListener('change', (e) => { options.clearClosedBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-clear-merged').addEventListener('change', (e) => { options.clearMergedBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-clear-open').addEventListener('change', (e) => { options.clearOpenBranches = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-auto-archive-merged').addEventListener('change', (e) => { options.autoArchiveMerged = e.target.checked; saveOptions(options); });
     modal.querySelector('#gpt-setting-auto-archive-closed').addEventListener('change', (e) => { options.autoArchiveClosed = e.target.checked; saveOptions(options); });
-    modal.querySelector('#gpt-update-check').addEventListener('click', () => checkForUpdates());
+    modal.querySelector('#gpt-update-check').addEventListener('click', () => {
+        checkForUpdates();
+        options.lastUpdateCheck = Date.now();
+        saveOptions(options);
+    });
     modal.querySelector('#gpt-reset-defaults').addEventListener('click', () => {
         options = { ...DEFAULT_OPTIONS };
         saveOptions(options);
@@ -1236,6 +1276,7 @@ body, html {
     modal.querySelector('#gpt-reset-windows').addEventListener('click', () => {
         options.repoSidebarX = options.repoSidebarY = options.repoSidebarWidth = options.repoSidebarHeight = null;
         options.versionSidebarX = options.versionSidebarY = options.versionSidebarWidth = options.versionSidebarHeight = null;
+        options.statsSidebarX = options.statsSidebarY = options.statsSidebarWidth = options.statsSidebarHeight = null;
         saveOptions(options);
         applyOptions();
     });
@@ -1249,13 +1290,22 @@ body, html {
         toggleSettingsButton(options.hideSettings);
         toggleRepoSidebar(options.showRepoSidebar);
         toggleVersionSidebar(options.showVersionSidebar);
+        toggleStatsSidebar(options.showStatsSidebar);
     });
     observers.push(pageObserver);
     pageObserver.observe(document.body, { childList: true, subtree: true });
 
     applyOptions();
-    if (options.autoCheckUpdates) {
-        checkForUpdates();
+    if (options.showStatsSidebar) {
+        statsObserver.disconnect();
+        renderStats();
+        statsObserver.observe(getStatsTarget(), observerConfig);
+    }
+    const now = Date.now();
+    if (options.autoCheckUpdates && (!options.lastUpdateCheck || now - options.lastUpdateCheck > 86400000)) {
+        checkForUpdates(true);
+        options.lastUpdateCheck = now;
+        saveOptions(options);
     }
 
     // Automatically archive tasks based on status changes
