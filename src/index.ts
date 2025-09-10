@@ -622,7 +622,7 @@ body, html {
 
   async function checkForUpdates(silent = false) {
     const url =
-      "https://raw.githubusercontent.com/supermarsx/openai-codex-userscript/main/openai-codex.user.js";
+      "https://github.com/supermarsx/openai-codex-userscript/releases/latest/download/openai-codex.user.js";
     try {
       const txt = await new Promise((resolve, reject) => {
         if (typeof GM_xmlhttpRequest === "function") {
@@ -649,7 +649,7 @@ body, html {
         const latest = m[1];
         if (latest !== SCRIPT_VERSION) {
           showToast(
-            `Update available (v${latest}). <a href="https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js" target="_blank">Download</a>`,
+            `Update available (v${latest}). <a href="${url}" target="_blank">Download</a>`,
           );
         } else if (!silent) {
           showToast("No updates found.");

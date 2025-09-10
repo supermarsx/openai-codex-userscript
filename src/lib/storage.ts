@@ -23,11 +23,28 @@ export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
       const tx = db.transaction(STORE, "readonly");
       const store = tx.objectStore(STORE);
       const req = store.get(key);
-      req.onsuccess = () => {
+      req.onsuccess = async () => {
         const value = req.result as string | undefined;
         if (value !== undefined) {
           try {
             resolve(JSON.parse(value) as T);
+            return;
+          } catch {
+            // fall through to fallback below
+          }
+        }
+        const lsValue =
+          typeof localStorage !== "undefined"
+            ? localStorage.getItem(key)
+            : null;
+        if (lsValue !== null) {
+          try {
+            const parsed = JSON.parse(lsValue) as T;
+            await saveJSON(key, parsed);
+            if (typeof localStorage !== "undefined") {
+              localStorage.removeItem(key);
+            }
+            resolve(parsed);
           } catch {
             resolve(fallback);
           }
