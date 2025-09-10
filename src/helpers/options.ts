@@ -12,6 +12,7 @@ export interface Options {
   hideSettings: boolean;
   threeColumnMode: boolean;
   autoCheckUpdates: boolean;
+  showStatsSidebar: boolean;
   showRepoSidebar: boolean;
   showVersionSidebar: boolean;
   clearClosedBranches: boolean;
@@ -21,6 +22,7 @@ export interface Options {
   autoArchiveClosed: boolean;
   historyLimit: number;
   disableHistory: boolean;
+  lastUpdateCheck: number;
   repoSidebarX: number | null;
   repoSidebarY: number | null;
   repoSidebarWidth: number | null;
@@ -29,6 +31,10 @@ export interface Options {
   versionSidebarY: number | null;
   versionSidebarWidth: number | null;
   versionSidebarHeight: number | null;
+  statsSidebarX: number | null;
+  statsSidebarY: number | null;
+  statsSidebarWidth: number | null;
+  statsSidebarHeight: number | null;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -43,6 +49,7 @@ export const DEFAULT_OPTIONS: Options = {
   hideSettings: false,
   threeColumnMode: false,
   autoCheckUpdates: false,
+  showStatsSidebar: false,
   showRepoSidebar: true,
   showVersionSidebar: true,
   clearClosedBranches: false,
@@ -52,6 +59,7 @@ export const DEFAULT_OPTIONS: Options = {
   autoArchiveClosed: false,
   historyLimit: 50,
   disableHistory: false,
+  lastUpdateCheck: 0,
   repoSidebarX: null,
   repoSidebarY: null,
   repoSidebarWidth: null,
@@ -60,6 +68,10 @@ export const DEFAULT_OPTIONS: Options = {
   versionSidebarY: null,
   versionSidebarWidth: null,
   versionSidebarHeight: null,
+  statsSidebarX: null,
+  statsSidebarY: null,
+  statsSidebarWidth: null,
+  statsSidebarHeight: null,
 };
 
 const STORAGE_KEY = 'gpt-script-options';
@@ -77,6 +89,7 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   hideSettings: (v): v is Options['hideSettings'] => typeof v === 'boolean',
   threeColumnMode: (v): v is Options['threeColumnMode'] => typeof v === 'boolean',
   autoCheckUpdates: (v): v is Options['autoCheckUpdates'] => typeof v === 'boolean',
+  showStatsSidebar: (v): v is Options['showStatsSidebar'] => typeof v === 'boolean',
   showRepoSidebar: (v): v is Options['showRepoSidebar'] => typeof v === 'boolean',
   showVersionSidebar: (v): v is Options['showVersionSidebar'] => typeof v === 'boolean',
   clearClosedBranches: (v): v is Options['clearClosedBranches'] => typeof v === 'boolean',
@@ -86,6 +99,7 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   autoArchiveClosed: (v): v is Options['autoArchiveClosed'] => typeof v === 'boolean',
   historyLimit: (v): v is Options['historyLimit'] => typeof v === 'number' && Number.isFinite(v),
   disableHistory: (v): v is Options['disableHistory'] => typeof v === 'boolean',
+  lastUpdateCheck: (v): v is Options['lastUpdateCheck'] => typeof v === 'number' && Number.isFinite(v),
   repoSidebarX: (v): v is Options['repoSidebarX'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   repoSidebarY: (v): v is Options['repoSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   repoSidebarWidth: (v): v is Options['repoSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
@@ -94,6 +108,10 @@ const OPTION_VALIDATORS: { [K in keyof Options]: (v: unknown) => v is Options[K]
   versionSidebarY: (v): v is Options['versionSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   versionSidebarWidth: (v): v is Options['versionSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
   versionSidebarHeight: (v): v is Options['versionSidebarHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsSidebarX: (v): v is Options['statsSidebarX'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsSidebarY: (v): v is Options['statsSidebarY'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsSidebarWidth: (v): v is Options['statsSidebarWidth'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
+  statsSidebarHeight: (v): v is Options['statsSidebarHeight'] => (typeof v === 'number' && Number.isFinite(v)) || v === null,
 };
 
 function sanitizeOptions(raw: Record<string, unknown>): Partial<Options> {

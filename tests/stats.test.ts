@@ -10,9 +10,10 @@ test('computes task stats correctly', { concurrency: false }, () => {
     <div class="task-row-container"><button>Closed</button></div>
     <div class="task-row-container"><circle></circle></div>
     <div class="task-row-container"><span>4</span></div>
+    <div class="task-row-container"><button aria-label="Cancel task"></button></div>
   `;
   const dom = new JSDOM(html);
   (globalThis as any).document = dom.window.document;
   const stats = getTaskStats();
-  assert.deepStrictEqual(stats, { open: 1, merged: 1, closed: 1, inProgress: 1, fourX: 1 });
+  assert.deepStrictEqual(stats, { open: 1, merged: 1, closed: 1, inProgress: 2, fourX: 1 });
 });
