@@ -33,16 +33,22 @@ export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
             // fall through to fallback below
           }
         }
-        const lsValue =
-          typeof localStorage !== "undefined"
-            ? localStorage.getItem(key)
-            : null;
+        let lsValue: string | null = null;
+        if (typeof localStorage !== "undefined") {
+          try {
+            lsValue = localStorage.getItem(key);
+          } catch {
+            lsValue = null;
+          }
+        }
         if (lsValue !== null) {
           try {
             const parsed = JSON.parse(lsValue) as T;
             await saveJSON(key, parsed);
             if (typeof localStorage !== "undefined") {
-              localStorage.removeItem(key);
+              try {
+                localStorage.removeItem(key);
+              } catch {}
             }
             resolve(parsed);
           } catch {
