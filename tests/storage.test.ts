@@ -1,42 +1,22 @@
-import test from 'node:test';
-import assert from 'node:assert';
+import test from "node:test";
+import assert from "node:assert";
+import "fake-indexeddb/auto";
 
 function loadStorage() {
-  const path = require.resolve('../src/lib/storage');
+  const path = require.resolve("../src/lib/storage");
   delete require.cache[path];
-  return require(path) as typeof import('../src/lib/storage');
+  return require(path) as typeof import("../src/lib/storage");
 }
 
-test('falls back to memory storage when localStorage disabled', { concurrency: false }, () => {
-  const error = new Error('denied');
-  (globalThis as any).localStorage = {
-    getItem() { throw error; },
-    setItem() { throw error; }
-  };
-
+test("saveJSON and loadJSON round-trip", async () => {
   const { loadJSON, saveJSON } = loadStorage();
-  saveJSON('test-key', { a: 1 });
-  const result = loadJSON('test-key', { a: 0 });
+  await saveJSON("test-key", { a: 1 });
+  const result = await loadJSON("test-key", { a: 0 });
   assert.deepStrictEqual(result, { a: 1 });
 });
 
-test('loadJSON returns fallback with disabled localStorage', { concurrency: false }, () => {
-  const error = new Error('denied');
-  (globalThis as any).localStorage = {
-    getItem() { throw error; },
-    setItem() { throw error; }
-  };
-
+test("loadJSON returns fallback when missing", async () => {
   const { loadJSON } = loadStorage();
-  const result = loadJSON('missing', { b: 2 });
+  const result = await loadJSON("missing", { b: 2 });
   assert.deepStrictEqual(result, { b: 2 });
-});
-
-test('falls back to memory storage when localStorage undefined', { concurrency: false }, () => {
-  delete (globalThis as any).localStorage;
-
-  const { loadJSON, saveJSON } = loadStorage();
-  saveJSON('none', { c: 3 });
-  const result = loadJSON('none', { c: 0 });
-  assert.deepStrictEqual(result, { c: 3 });
 });

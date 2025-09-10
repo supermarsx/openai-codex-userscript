@@ -1,24 +1,27 @@
-import { loadJSON, saveJSON } from '../lib/storage';
-import { loadOptions } from './options';
+import { loadJSON, saveJSON } from "../lib/storage";
+import { loadOptions } from "./options";
 
-const STORAGE_KEY = 'gpt-prompt-history';
+const STORAGE_KEY = "gpt-prompt-history";
 
-export function loadHistory(): string[] {
-  return loadJSON<string[]>(STORAGE_KEY, []);
+export async function loadHistory(): Promise<string[]> {
+  return await loadJSON<string[]>(STORAGE_KEY, []);
 }
 
-export function saveHistory(list: string[]): void {
-  saveJSON(STORAGE_KEY, list);
+export async function saveHistory(list: string[]): Promise<void> {
+  await saveJSON(STORAGE_KEY, list);
 }
 
-export function addToHistory(list: string[], text: string): string[] {
-  const opts = loadOptions();
+export async function addToHistory(
+  list: string[],
+  text: string,
+): Promise<string[]> {
+  const opts = await loadOptions();
   if (opts.disableHistory) return list;
   const limit = opts.historyLimit || 50;
   text = text.trim();
   if (!text) return list;
   list.unshift(text);
   if (list.length > limit) list.length = limit;
-  saveHistory(list);
+  await saveHistory(list);
   return list;
 }

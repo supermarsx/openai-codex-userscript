@@ -1,33 +1,51 @@
-# openai-codex-userscript
+# OpenAI Codex Enhancer
 
-OpenAI Codex Super UI Userscript
+![CI](https://img.shields.io/github/actions/workflow/status/supermarsx/openai-codex-userscript/ci.yml?branch=main)
+![Downloads](https://img.shields.io/github/downloads/supermarsx/openai-codex-userscript/total)
+![Built with TypeScript](https://img.shields.io/badge/built%20with-TypeScript-blue)
+![License](https://img.shields.io/github/license/supermarsx/openai-codex-userscript)
+[![Install](https://img.shields.io/badge/install-userscript-green)](https://github.com/supermarsx/openai-codex-userscript/releases/latest/download/openai-codex.user.js)
+![Stars](https://img.shields.io/github/stars/supermarsx/openai-codex-userscript?style=social)
+![Forks](https://img.shields.io/github/forks/supermarsx/openai-codex-userscript?style=social)
+![Watchers](https://img.shields.io/github/watchers/supermarsx/openai-codex-userscript?style=social)
+![Coverage](https://img.shields.io/badge/coverage-unknown-lightgrey)
+![Commit Activity](https://img.shields.io/github/commit-activity/m/supermarsx/openai-codex-userscript)
 
-**[[INSTALL USERSCRIPT]](https://github.com/supermarsx/openai-codex-userscript/raw/refs/heads/main/openai-codex.user.js)**
+OpenAI Codex Enhancer improves the Codex interface with prompt suggestions, sidebars and extensive customization.
+
+**[Install the userscript](https://github.com/supermarsx/openai-codex-userscript/releases/latest/download/openai-codex.user.js)**
 Install Violentmonkey from https://violentmonkey.github.io/get-it/ to run the userscript.
 
+## Features
+
+- Customisable prompt suggestion dropdown
+- Settings modal with theme, font and UI toggles
+- Repository, version and stats sidebars
+- Persistent prompt history stored in IndexedDB
+- Automatic update checks
 
 This script reuses Codex's own theme variables so no extra network request is needed.
 
 The dropdown suggestions can be customised by clicking the gear icon next to the
 list. A prompt will let you edit one suggestion per line. The updated entries are
 saved under the `gpt-prompt-suggestions` key in your browser's
-`localStorage`, so your changes persist across sessions.
+IndexedDB storage, so your changes persist across sessions.
 
 ## Settings modal
 
 A floating gear icon is added to the side of the page. Clicking it opens a modal
 where you can manage your prompt suggestions and toggle various UI options:
 
-* Switch between Light, Dark and OLED themes.
-* Hide the “What are we coding next?” or “What should we code next?” header.
-* Hide the “Docs” navigation link.
-* Hide the "Settings" button.
-* Toggle the repository sidebar that lists detected repositories.
-* Toggle the version sidebar that displays branches for the selected repository.
-* Enable auto-archiving when a task is merged or closed.
-* Import or export your prompt suggestions as a JSON file.
+- Switch between Light, Dark and OLED themes.
+- Hide the “What are we coding next?” or “What should we code next?” header.
+- Hide the “Docs” navigation link.
+- Hide the "Settings" button.
+- Toggle the repository sidebar that lists detected repositories.
+- Toggle the version sidebar that displays branches for the selected repository.
+- Enable auto-archiving when a task is merged or closed.
+- Import or export your prompt suggestions as a JSON file.
 
-The chosen settings are stored in `localStorage` so they apply whenever the
+The chosen settings are stored in IndexedDB so they apply whenever the
 script runs. By default both repository and version sidebars are visible while
 auto-archiving for merged and closed tasks is disabled. These behaviours can be
 toggled from the settings modal.
@@ -38,12 +56,13 @@ Click the book icon in the action bar to open the history modal. It lists your
 previous prompts up to the limit defined by `historyLimit` (50 by default). A
 search box filters entries while buttons let you preview, restore or delete
 individual prompts. Use the **Clear** button to remove all stored history.
-Entries are kept in the `gpt-prompt-history` key of `localStorage`.
+Entries are kept in the `gpt-prompt-history` store of IndexedDB.
 
 ## Theme styling
 
 Theme variables for Light and Dark mode are injected from Codex's own CSS so the interface adapts to your system preference. An additional OLED style is provided with deeper blacks. A minimal fallback style keeps the dropdown readable.
 The script locates the ChatGPT prompt input using a set of fallback selectors:
+
 1. `#prompt-textarea`
 2. `[data-testid="prompt-textarea"]`
 3. The first `.ProseMirror` editor element

@@ -1,56 +1,58 @@
-const memoryStorage = new Map<string, string>();
+const DB_NAME = "openai-codex-enhancer";
+const STORE = "keyval";
+let dbPromise: Promise<IDBDatabase> | null = null;
 
-function hasLocalStorage(): boolean {
+function getDB(): Promise<IDBDatabase> {
+  if (!dbPromise) {
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(STORE);
+      };
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve(req.result);
+    });
+  }
+  return dbPromise;
+}
+
+export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
   try {
-    if (typeof localStorage === 'undefined') {
-      return false;
-    }
-    // Accessing localStorage may throw in some browsers when disabled
-    localStorage.getItem('');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getItem(key: string): string | null {
-  if (hasLocalStorage()) {
-    try {
-      return localStorage.getItem(key);
-    } catch (e) {
-      console.error('localStorage unavailable, using in-memory storage', e);
-    }
-  }
-  return memoryStorage.get(key) ?? null;
-}
-
-function setItem(key: string, value: string): void {
-  if (hasLocalStorage()) {
-    try {
-      localStorage.setItem(key, value);
-      return;
-    } catch (e) {
-      console.error('localStorage unavailable, using in-memory storage', e);
-    }
-  }
-  memoryStorage.set(key, value);
-}
-
-export function loadJSON<T>(key: string, fallback: T): T {
-  try {
-    const raw = getItem(key);
-    if (raw) {
-      return JSON.parse(raw) as T;
-    }
+    const db = await getDB();
+    return await new Promise<T>((resolve) => {
+      const tx = db.transaction(STORE, "readonly");
+      const store = tx.objectStore(STORE);
+      const req = store.get(key);
+      req.onsuccess = () => {
+        const value = req.result as string | undefined;
+        if (value !== undefined) {
+          try {
+            resolve(JSON.parse(value) as T);
+          } catch {
+            resolve(fallback);
+          }
+        } else {
+          resolve(fallback);
+        }
+      };
+      req.onerror = () => resolve(fallback);
+    });
   } catch (e) {
     console.error(`Failed to load ${key}`, e);
+    return fallback;
   }
-  return fallback;
 }
 
-export function saveJSON(key: string, data: any): void {
+export async function saveJSON(key: string, data: any): Promise<void> {
   try {
-    setItem(key, JSON.stringify(data));
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      const req = store.put(JSON.stringify(data), key);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
   } catch (e) {
     console.error(`Failed to save ${key}`, e);
   }
