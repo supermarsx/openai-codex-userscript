@@ -52,3 +52,19 @@ test("loadJSON handles localStorage access errors", async () => {
   assert.deepStrictEqual(result, { d: 4 });
   localStorage.getItem = original;
 });
+
+test("falls back to memory store when IndexedDB fails", async () => {
+  const { loadJSON, saveJSON } = loadStorage();
+  const originalOpen = indexedDB.open.bind(indexedDB);
+  indexedDB.open = () => {
+    const req: any = { error: new Error("denied") };
+    setTimeout(() => {
+      req.onerror?.(new Event("error"));
+    }, 0);
+    return req;
+  };
+  await saveJSON("mem", { e: 5 });
+  const result = await loadJSON("mem", { e: 0 });
+  assert.deepStrictEqual(result, { e: 5 });
+  indexedDB.open = originalOpen;
+});
