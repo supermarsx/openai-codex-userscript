@@ -719,19 +719,35 @@ body, html {
         `;
     }
 
-    statsBtn.addEventListener('click', () => {
-        renderStats();
-        statsModal.classList.add('show');
-    });
-
-    statsModal.querySelector('#gpt-stats-close').addEventListener('click', () => statsModal.classList.remove('show'));
-    statsModal.addEventListener('click', (e) => { if (e.target === statsModal) statsModal.classList.remove('show'); });
+    const observerConfig = { childList: true, subtree: true, characterData: true };
+    const getStatsTarget = () => document.querySelector('.task-row-container')?.parentElement || document.body;
 
     const statsObserver = new MutationObserver(() => {
-        if (statsModal.classList.contains('show')) renderStats();
+        if (statsModal.classList.contains('show')) {
+            statsObserver.disconnect();
+            renderStats();
+            statsObserver.observe(getStatsTarget(), observerConfig);
+        }
     });
     observers.push(statsObserver);
-    statsObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    statsBtn.addEventListener('click', () => {
+        statsObserver.disconnect();
+        renderStats();
+        statsModal.classList.add('show');
+        statsObserver.observe(getStatsTarget(), observerConfig);
+    });
+
+    statsModal.querySelector('#gpt-stats-close').addEventListener('click', () => {
+        statsModal.classList.remove('show');
+        statsObserver.disconnect();
+    });
+    statsModal.addEventListener('click', (e) => {
+        if (e.target === statsModal) {
+            statsModal.classList.remove('show');
+            statsObserver.disconnect();
+        }
+    });
 
     const historyPreview = document.createElement('div');
     historyPreview.id = 'gpt-history-preview';
