@@ -22,5 +22,6 @@ test("computes task stats correctly", { concurrency: false }, () => {
     closed: 1,
     inProgress: 2,
     fourX: 1,
+    total: 6,
   });
 });

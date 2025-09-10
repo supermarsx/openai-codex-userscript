@@ -4,8 +4,12 @@ export interface TaskStats {
   closed: number;
   inProgress: number;
   fourX: number;
+  total: number;
 }
 
+/**
+ * Collects task statistics from the DOM.
+ */
 export function getTaskStats(): TaskStats {
   const rows = Array.from(
     document.querySelectorAll(".task-row-container"),
@@ -29,5 +33,22 @@ export function getTaskStats(): TaskStats {
       (span) => span.textContent.trim() === "4",
     ),
   ).length;
-  return { open, merged, closed, inProgress, fourX };
+  const total = rows.length;
+  return { open, merged, closed, inProgress, fourX, total };
+}
+
+/**
+ * Renders task statistics into a list element.
+ */
+export function renderStats(list: HTMLElement): void {
+  const { open, merged, closed, inProgress, fourX, total } = getTaskStats();
+  list.innerHTML = `
+            <li>Total Tasks: ${total}</li>
+            <li>Open PRs: ${open}</li>
+            <li>Merged PRs: ${merged}</li>
+            <li>Closed PRs: ${closed}</li>
+            <li>Being Worked On: ${inProgress}</li>
+            <li>4x Run Tasks: ${fourX}</li>
+            <li id="gpt-stats-updated">Last updated: ${new Date().toLocaleString()}</li>
+        `;
 }
