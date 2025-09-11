@@ -80,12 +80,12 @@ jobs:
         id: pkg
         run: |
           echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
-      - uses: actions/download-artifact@v4
-        with:
-          name: userscript
-          path: dist
-      - uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.pkg.outputs.version }}
-          name: v${{ steps.pkg.outputs.version }}
-          files: dist/openai-codex.user.js
+        - uses: actions/download-artifact@v4
+          with:
+            name: userscript
+            path: .
+        - uses: softprops/action-gh-release@v1
+          with:
+            tag_name: v${{ steps.pkg.outputs.version }}
+            name: v${{ steps.pkg.outputs.version }}
+            files: dist/openai-codex.user.js
